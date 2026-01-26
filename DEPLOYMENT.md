@@ -63,7 +63,9 @@ nano configs/xray-vless-reality.json
 
 ## Процесс обновления
 
-### На локальном ПК
+### VPN Server (xray-vpn-server)
+
+На локальном ПК:
 
 ```bash
 # 1. Вносите изменения в конфигурацию или скрипты
@@ -71,25 +73,47 @@ nano configs/xray-vless-reality.json
 
 # 2. Коммитите изменения
 git add .
-git commit -m "Обновил конфигурацию: добавил нового клиента"
+git commit -m "Обновил конфигурацию"
 
 # 3. Пушите на GitHub
 git push origin main
 ```
 
-### На VPS сервере
+На VPS сервере:
 
 ```bash
 # Автоматическое обновление одной командой
-cd /opt/xray-vpn && ./scripts/deploy.sh
+cd /home/xray-vpn && ./scripts/kvn.sh
 ```
 
-Скрипт `deploy.sh` автоматически:
-- Создаст резервную копию текущей конфигурации
+Скрипт `kvn.sh` автоматически:
+- Создаст резервную копию БД
 - Скачает изменения с GitHub
-- Проверит валидность конфигурации
-- Перезапустит X-Ray
+- Обновит зависимости (если изменился package.json)
+- Перезапустит API через PM2
+- Проверит health check
 - Откатит изменения при ошибке
+
+### Telegram Bot (yaronetworktool-bot)
+
+На локальном ПК:
+
+```bash
+cd yaronetworktool
+git add .
+git commit -m "Обновил бота"
+git push origin main
+```
+
+На VPS сервере:
+
+```bash
+cd ~/yaronetworktool-bot && ./bot/kvn-bot.sh
+```
+
+Скрипт `kvn-bot.sh`:
+- Скачает изменения с GitHub
+- Перезапустит бота через PM2
 
 ## Обновление только конфигурации
 
@@ -162,29 +186,38 @@ webhook -hooks /etc/webhook.conf -verbose -port 9000
 
 ### Защита приватных данных
 
-Никогда не коммитьте в Git:
+**ВАЖНО:** Никогда не коммитьте в Git:
 - Приватные ключи (`*.key`)
 - Сертификаты (`*.crt`, `*.csr`)
 - Файл `generated/keys.txt`
-- Логи
+- Файлы `.env` с токенами и паролями
+- Базу данных (`*.db`)
+- Логи (`*.log`)
+- Резервные копии с реальными данными
 
-Файл `.gitignore` уже настроен для этого.
+Файл `.gitignore` уже настроен для защиты чувствительных данных.
 
-### Использование переменных окружения
+### Использование .env файлов
 
-Для чувствительных данных используйте переменные окружения:
+Для чувствительных данных используйте `.env` файлы:
 
+**VPN Server (.env):**
 ```bash
-# На сервере создайте файл с переменными
-sudo nano /opt/xray-vpn/.env
-
-# Добавьте:
-UUID=ваш-uuid
-PRIVATE_KEY=ваш-приватный-ключ
-SHORT_ID=ваш-short-id
+DB_PATH=/home/xray-vpn/database/vpn.db
+API_PORT=333
+JWT_SECRET=[СЕКРЕТНЫЙ_КЛЮЧ]
 ```
 
-Модифицируйте скрипты для использования этих переменных.
+**Telegram Bot (.env):**
+```bash
+TELEGRAM_BOT_TOKEN=[ВАШ_ТОКЕН]
+ADMIN_TELEGRAM_ID=[ВАШ_ID]
+API_BASE_URL=http://localhost:333
+SERVER_IP=[IP_СЕРВЕРА]
+XRAY_LOG_PATH=/var/log/xray/access.log
+```
+
+Используйте `.env.example` как шаблон (без реальных данных).
 
 ## Откат изменений
 
@@ -217,18 +250,43 @@ tail -f /var/log/xray-deploy.log
 ## Структура директорий на сервере
 
 ```
-/opt/xray-vpn/              # Основной проект (Git репозиторий)
-├── configs/                # Конфигурации
-├── scripts/                # Скрипты
-└── generated/              # Сгенерированные ключи (не в Git)
+/home/xray-vpn/                 # VPN Server + API
+├── api/                        # Management API
+│   ├── server.js
+│   ├── routes/
+│   └── middleware/
+├── configs/                    # Конфигурации X-Ray
+├── scripts/                    # Скрипты управления
+├── database/                   # База данных
+│   ├── init.sql
+│   ├── models/
+│   └── vpn.db
+├── .env                        # Переменные окружения (не в Git!)
+└── package.json
 
-/opt/xray-vpn-backup/       # Резервные копии
-└── config.json.backup.*    # Бэкапы конфигураций
+~/yaronetworktool-bot/          # Telegram Bot
+├── bot/
+│   ├── yaronetworktool_bot.js
+│   ├── subscription-checker.js
+│   ├── traffic-checker.js
+│   ├── torrent-detector.js
+│   ├── backup.sh
+│   ├── traffic-reset.js
+│   ├── xray-log-parser.js
+│   ├── weekly-report.js
+│   └── utils/
+├── database/
+│   ├── init.sql
+│   └── yaronetworkbase.db
+├── backups/                    # Резервные копии
+├── logs/                       # Логи
+├── .env                        # Переменные окружения (не в Git!)
+└── package.json
 
-/usr/local/etc/xray/        # Активная конфигурация X-Ray
-└── config.json             # Текущая конфигурация
+/usr/local/etc/xray/            # Активная конфигурация X-Ray
+└── config.json
 
-/var/log/xray/              # Логи X-Ray
+/var/log/xray/                  # Логи X-Ray
 ├── access.log
 └── error.log
 ```
@@ -236,23 +294,33 @@ tail -f /var/log/xray-deploy.log
 ## Полезные команды
 
 ```bash
-# Проверка статуса Git
-cd /opt/xray-vpn && git status
-
-# Просмотр последних изменений
+# === Git ===
+cd /home/xray-vpn && git status
 git log --oneline -5
-
-# Просмотр изменений перед pull
 git fetch && git diff HEAD..origin/main
 
-# Принудительное обновление (осторожно!)
-git fetch --all && git reset --hard origin/main
+# === PM2 ===
+pm2 status
+pm2 logs vpn-api
+pm2 logs vpn-bot
+pm2 restart vpn-api
+pm2 restart vpn-bot
 
-# Список бэкапов
-ls -lh /opt/xray-vpn-backup/
-
-# Проверка конфигурации
+# === X-Ray ===
+sudo systemctl status xray
+sudo journalctl -u xray -f
 /usr/local/bin/xray run -test -config /usr/local/etc/xray/config.json
+
+# === Cron ===
+crontab -l
+crontab -e
+
+# === Резервные копии ===
+ls -lh ~/yaronetworktool-bot/backups/
+
+# === База данных ===
+sqlite3 /home/xray-vpn/database/vpn.db "SELECT * FROM clients;"
+sqlite3 ~/yaronetworktool-bot/database/yaronetworkbase.db "SELECT * FROM clients;"
 ```
 
 ## Troubleshooting

@@ -167,6 +167,82 @@ sudo journalctl -u xray -f
 - Не делитесь своими ключами и UUID
 - Используйте файрвол (ufw) для ограничения доступа
 
+## Management API и Telegram Bot
+
+После установки X-Ray можно настроить Management API и Telegram бота для удобного управления.
+
+### Management API
+
+```bash
+# Перейти в директорию API
+cd /home/xray-vpn
+
+# Установить зависимости
+npm install
+
+# Настроить .env
+cp .env.example .env
+nano .env
+
+# Запустить через PM2
+pm2 start api/server.js --name vpn-api --time
+pm2 save
+```
+
+API будет доступен на порту 333.
+
+### Telegram Bot
+
+```bash
+# Перейти в директорию бота
+cd ~/yaronetworktool-bot
+
+# Установить зависимости
+npm install
+
+# Настроить .env
+cp .env.example .env
+nano .env
+# Указать TELEGRAM_BOT_TOKEN и ADMIN_TELEGRAM_ID
+
+# Запустить через PM2
+pm2 start bot/yaronetworktool_bot.js --name vpn-bot --time
+pm2 save
+```
+
+Подробнее см. `yaronetworktool/README.md`
+
+## Автоматические задачи (Cron)
+
+Система поддерживает автоматические проверки и отчеты:
+
+```bash
+cd ~/yaronetworktool-bot
+
+# Проверка подписок (каждый день в 10:00)
+./bot/setup-subscription-checker-cron.sh
+
+# Проверка трафика (3 раза в день)
+./bot/setup-traffic-checker-cron.sh
+
+# Обнаружение торрентов (каждый день в 22:00)
+./bot/setup-torrent-detector-cron.sh
+
+# Резервное копирование (каждые 3 дня в 03:00)
+./bot/setup-backup-cron.sh
+
+# Ежемесячный сброс трафика (1-го числа в 00:00)
+./bot/setup-traffic-reset-cron.sh
+
+# Парсер логов X-Ray (каждый час)
+./bot/setup-log-parser-cron.sh
+
+# Недельный отчет (понедельник в 09:00)
+./bot/setup-weekly-report-cron.sh
+```
+
+Проверить активные задачи: `crontab -l`
+
 ## Troubleshooting
 
 ### X-Ray не запускается
@@ -186,7 +262,34 @@ sudo journalctl -u xray -n 50
 3. Проверьте логи X-Ray
 4. Для CDN: проверьте настройки Cloudflare
 
+### API не отвечает
+
+```bash
+# Проверьте статус
+pm2 status vpn-api
+
+# Проверьте логи
+pm2 logs vpn-api
+
+# Перезапустите
+pm2 restart vpn-api
+```
+
+### Бот не отвечает
+
+```bash
+# Проверьте статус
+pm2 status vpn-bot
+
+# Проверьте логи
+pm2 logs vpn-bot
+
+# Перезапустите
+pm2 restart vpn-bot
+```
+
 ## Дополнительные ресурсы
 
 - [Документация X-Ray](https://xtls.github.io/)
 - [GitHub X-Ray Core](https://github.com/XTLS/Xray-core)
+- [Telegram Bot API](https://core.telegram.org/bots/api)

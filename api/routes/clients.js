@@ -296,4 +296,38 @@ router.post('/:uuid/reset-warnings', async (req, res, next) => {
   }
 });
 
+/**
+ * PUT /clients/:uuid/device-limit - Изменить лимит устройств
+ */
+router.put('/:uuid/device-limit', async (req, res, next) => {
+  try {
+    const { uuid } = req.params;
+    const { max_devices } = req.body;
+
+    if (!max_devices || max_devices < 1 || max_devices > 10) {
+      return res.status(400).json({
+        success: false,
+        error: 'max_devices must be between 1 and 10'
+      });
+    }
+
+    const client = await clientModel.update(uuid, { max_devices });
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        error: 'Client not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Device limit updated to ${max_devices}`,
+      client
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

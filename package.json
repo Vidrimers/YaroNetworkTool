@@ -1,0 +1,36 @@
+{
+  "name": "xray-vpn-management-api",
+  "version": "1.0.0",
+  "description": "Management API для VPN сервера на базе X-Ray Core",
+  "main": "api/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node api/server.js",
+    "dev": "nodemon api/server.js",
+    "init-db": "sqlite3 database/vpn.db < database/init.sql",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "vpn",
+    "xray",
+    "vless",
+    "management",
+    "api"
+  ],
+  "author": "YaroNetwork",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "sqlite3": "^5.1.7",
+    "uuid": "^9.0.1",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

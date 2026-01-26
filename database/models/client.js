@@ -92,7 +92,7 @@ class ClientModel {
       'name', 'telegram_id', 'email',
       'subscription_days', 'subscription_end',
       'traffic_limit_gb', 'traffic_used_gb',
-      'status', 'blocked_reason'
+      'status', 'blocked_reason', 'warnings_count', 'last_warning_date'
     ];
 
     const fields = [];

@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS clients (
     -- Статус
     status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'blocked', 'expired')),
     blocked_reason TEXT,
+    warnings_count INTEGER NOT NULL DEFAULT 0,
+    last_warning_date DATETIME,
     
     -- Метаданные
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

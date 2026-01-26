@@ -249,4 +249,51 @@ router.post('/:uuid/unblock', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /clients/:uuid/warn - Выдать предупреждение клиенту
+ */
+router.post('/:uuid/warn', async (req, res, next) => {
+  try {
+    const { uuid } = req.params;
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({
+        success: false,
+        error: 'Reason is required'
+      });
+    }
+
+    const result = await clientModel.addWarning(uuid, reason);
+
+    res.json({
+      success: true,
+      message: 'Warning issued successfully',
+      client: result.client,
+      warningsCount: result.warningsCount,
+      blockDuration: result.blockDuration
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /clients/:uuid/reset-warnings - Сбросить предупреждения
+ */
+router.post('/:uuid/reset-warnings', async (req, res, next) => {
+  try {
+    const { uuid } = req.params;
+    const client = await clientModel.resetWarnings(uuid);
+
+    res.json({
+      success: true,
+      message: 'Warnings reset successfully',
+      client
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

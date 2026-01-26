@@ -123,8 +123,15 @@ class ClientModel {
    * Удалить клиента
    */
   async delete(uuid) {
-    const result = await this.db.run('DELETE FROM clients WHERE uuid = ?', [uuid]);
-    return result.changes > 0;
+    try {
+      await this.db.run('DELETE FROM clients WHERE uuid = ?', [uuid]);
+      // Проверяем, существует ли клиент после удаления
+      const client = await this.getByUuid(uuid);
+      return !client; // Вернет true если клиент удален (не найден)
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      return false;
+    }
   }
 
   /**
@@ -208,6 +215,61 @@ class ClientModel {
     await this.update(uuid, {
       status: 'active',
       blocked_reason: null
+    });
+
+    return this.getByUuid(uuid);
+  }
+
+  /**
+   * Выдать предупреждение клиенту
+   */
+  async addWarning(uuid, reason) {
+    const client = await this.getByUuid(uuid);
+    if (!client) {
+      throw new Error('Client not found');
+    }
+
+    const newWarningsCount = (client.warnings_count || 0) + 1;
+    const now = new Date();
+
+    // Определяем действие в зависимости от количества предупреждений
+    let blockDuration = null;
+    let blockReason = null;
+
+    if (newWarningsCount === 1) {
+      // Первое предупреждение - блокировка на 24 часа
+      blockDuration = 24 * 60 * 60 * 1000; // 24 часа в миллисекундах
+      blockReason = `Первое предупреждение: ${reason}. Блокировка на 24 часа.`;
+    } else if (newWarningsCount === 2) {
+      // Второе предупреждение - блокировка на 7 дней
+      blockDuration = 7 * 24 * 60 * 60 * 1000; // 7 дней
+      blockReason = `Второе предупреждение: ${reason}. Блокировка на 7 дней.`;
+    } else if (newWarningsCount >= 3) {
+      // Третье предупреждение - постоянная блокировка
+      blockReason = `Третье предупреждение: ${reason}. Постоянная блокировка.`;
+    }
+
+    await this.update(uuid, {
+      warnings_count: newWarningsCount,
+      last_warning_date: now.toISOString(),
+      status: 'blocked',
+      blocked_reason: blockReason
+    });
+
+    return {
+      client: await this.getByUuid(uuid),
+      warningsCount: newWarningsCount,
+      blockDuration: blockDuration
+    };
+  }
+
+  /**
+   * Сбросить предупреждения клиента
+   */
+  async resetWarnings(uuid) {
+    await this.update(uuid, {
+      warnings_count: 0,
+      last_warning_date: null
     });
 
     return this.getByUuid(uuid);

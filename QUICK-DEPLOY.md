@@ -116,11 +116,11 @@ pm2 startup
 
 ```bash
 # Health check
-curl http://localhost:3000/health
+curl http://localhost:333/health
 # Должен вернуть: {"status":"ok",...}
 
 # Список клиентов (должен быть пустой)
-curl http://localhost:3000/api/v1/clients
+curl http://localhost:333/api/v1/clients
 # Должен вернуть: {"success":true,"count":0,"clients":[]}
 ```
 
@@ -132,7 +132,7 @@ ufw allow 22/tcp      # SSH
 ufw allow 443/tcp     # X-Ray (HTTPS)
 ufw enable
 
-# API доступен только локально (localhost:3000)
+# API доступен только локально (localhost:333)
 # Бот будет подключаться через SSH туннель или напрямую если разрешить порт
 ```
 
@@ -183,7 +183,7 @@ TELEGRAM_BOT_TOKEN=8203314241:AAG53unoLQMWfLMYxWNYdPMeG1TGeWCS50Q
 TELEGRAM_ADMIN_ID=137981675
 
 # API Configuration (подключение к серверу)
-API_BASE_URL=http://144.124.237.222:3000
+API_BASE_URL=http://144.124.237.222:333
 SERVER_IP=144.124.237.222
 
 # Database (используем API, не прямой доступ к БД)
@@ -203,25 +203,25 @@ SSH_PASSWORD=your-server-password
 
 На сервере:
 ```bash
-ufw allow 3000/tcp
+ufw allow 333/tcp
 ufw reload
 ```
 
-Теперь API доступен по `http://144.124.237.222:3000`
+Теперь API доступен по `http://144.124.237.222:333`
 
 #### Шаг 5: Вариант B - Использовать SSH туннель (безопаснее)
 
 На локальном компьютере:
 ```bash
 # Создать SSH туннель (в отдельном терминале)
-ssh -L 3000:localhost:3000 root@144.124.237.222
+ssh -L 333:localhost:333 root@144.124.237.222
 
 # Оставьте этот терминал открытым
 ```
 
 В `.env` измените:
 ```env
-API_BASE_URL=http://localhost:3000
+API_BASE_URL=http://localhost:333
 ```
 
 #### Шаг 6: Запустить бота локально
@@ -350,7 +350,7 @@ pm2 logs vpn-api --lines 100
 ```
 
 Частые причины:
-- Порт 3000 уже занят: `netstat -tulpn | grep 3000`
+- Порт 333 уже занят: `netstat -tulpn | grep 333`
 - Неправильный путь к БД в .env
 - База данных не инициализирована
 

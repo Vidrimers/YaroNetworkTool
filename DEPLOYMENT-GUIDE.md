@@ -5,7 +5,7 @@
 ```
 VPN Сервер (144.124.237.222)
 ├── ~/xray-vpn/                 # Основной репозиторий
-│   ├── api/server.js           # Management API (порт 3000)
+│   ├── api/server.js           # Management API (порт 333)
 │   ├── database/vpn.db         # База данных SQLite
 │   ├── configs/                # Конфигурации X-Ray
 │   └── scripts/                # CLI скрипты
@@ -166,7 +166,7 @@ TELEGRAM_BOT_TOKEN=8203314241:AAG53unoLQMWfLMYxWNYdPMeG1TGeWCS50Q
 TELEGRAM_ADMIN_ID=137981675
 
 # API Configuration (локальный API на том же сервере)
-API_BASE_URL=http://localhost:3000
+API_BASE_URL=http://localhost:333
 SERVER_IP=144.124.237.222
 
 # Database (используем ту же базу что и API)
@@ -481,10 +481,10 @@ pm2 restart all
 # Разрешить только необходимые порты
 ufw allow 22/tcp      # SSH
 ufw allow 443/tcp     # X-Ray (HTTPS)
+ufw allow 333/tcp     # Management API
 ufw enable
 
-# API доступен только локально (localhost:3000)
-# Бот подключается к API локально
+# Бот подключается к API через порт 333
 ```
 
 ### Защита .env файлов
@@ -514,7 +514,7 @@ crontab -e
 
 ## Резюме
 
-✅ **API запущен:** http://localhost:3000 (PM2: vpn-api)
+✅ **API запущен:** http://localhost:333 (PM2: vpn-api)
 ✅ **Бот запущен:** PM2: vpn-bot
 ✅ **Автообновление:** ./scripts/kvn.sh и ./bot/kvn-bot.sh
 ✅ **Автозапуск:** PM2 startup настроен

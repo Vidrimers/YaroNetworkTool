@@ -120,13 +120,13 @@ pm2 restart all
 ### API
 ```bash
 # Health check
-curl http://localhost:3000/health
+curl http://localhost:333/health
 
 # Список клиентов
-curl http://localhost:3000/api/v1/clients
+curl http://localhost:333/api/v1/clients
 
 # Запросы на продление
-curl http://localhost:3000/api/v1/extension-requests
+curl http://localhost:333/api/v1/extension-requests
 ```
 
 ### Бот
@@ -257,7 +257,7 @@ pm2 status                   # Память по процессам
 ### Сетевые подключения
 ```bash
 netstat -tulpn               # Все порты
-netstat -tulpn | grep 3000   # API порт
+netstat -tulpn | grep 333    # API порт
 ss -s                        # Статистика сокетов
 ```
 
@@ -319,7 +319,7 @@ cd ~/yaronetworktool && ./bot/kvn-bot.sh
 ### Проверить что все работает
 ```bash
 pm2 status                              # Все процессы online
-curl http://localhost:3000/health       # API отвечает
+curl http://localhost:333/health        # API отвечает
 pm2 logs vpn-bot --lines 10             # Бот работает
 ```
 

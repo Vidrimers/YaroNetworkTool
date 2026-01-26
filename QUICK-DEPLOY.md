@@ -179,7 +179,8 @@ npm install
 
 ```env
 # Telegram Bot Configuration
-TELEGRAM_BOT_TOKEN=8203314241:AAG53unoLQMWfLMYxWNYdPMeG1TGeWCS50Q
+TELEGRAM_BOT_TOKEN=UR_TOKEN
+
 TELEGRAM_ADMIN_ID=137981675
 
 # API Configuration (подключение к серверу)

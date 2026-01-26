@@ -56,10 +56,10 @@ app.get('/api/v1', (req, res) => {
     name: 'VPN Management API',
     version: '1.0.0',
     endpoints: {
-      clients: '/api/v1/clients',
-      stats: '/api/v1/stats',
-      extensionRequests: '/api/v1/extension-requests',
-      system: '/api/v1/system'
+      clients: '/api/clients',
+      stats: '/api/stats',
+      extensionRequests: '/api/extension-requests',
+      system: '/api/system'
     }
   });
 });
@@ -69,9 +69,9 @@ import clientsRouter from './routes/clients.js';
 import statsRouter from './routes/stats.js';
 import extensionRequestsRouter from './routes/extension-requests.js';
 
-app.use('/api/v1/clients', clientsRouter);
-app.use('/api/v1/stats', statsRouter);
-app.use('/api/v1/extension-requests', extensionRequestsRouter);
+app.use('/api/clients', clientsRouter);
+app.use('/api/stats', statsRouter);
+app.use('/api/extension-requests', extensionRequestsRouter);
 
 // 404 handler
 app.use((req, res) => {

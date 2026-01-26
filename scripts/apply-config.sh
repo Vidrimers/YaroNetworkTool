@@ -33,7 +33,8 @@ sudo mkdir -p "$BACKUP_DIR"
 
 # Валидация конфигурации
 echo -e "${YELLOW}[1/4]${NC} Валидация конфигурации..."
-if ! ./scripts/validate-config.sh "$CONFIG_FILE"; then
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+if ! "$SCRIPT_DIR/validate-config.sh" "$CONFIG_FILE"; then
     echo -e "${RED}[ERROR]${NC} Конфигурация невалидна!"
     exit 1
 fi

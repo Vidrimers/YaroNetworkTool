@@ -32,6 +32,10 @@ clients.txt
 # Сгенерированные ключи и конфигурации
 generated/
 
+# Конфигурации X-Ray с реальными ключами (хранятся только на сервере)
+configs/xray-vless-reality.json
+configs/xray-vless-xhttp-cdn.json
+
 # Логи
 *.log
 logs/

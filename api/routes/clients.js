@@ -5,10 +5,12 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import ClientModel from '../../database/models/client.js';
+import XrayConfigManager from '../utils/xray-config.js';
 
 const router = express.Router();
 const DB_PATH = process.env.DB_PATH || './database/vpn.db';
 const clientModel = new ClientModel(DB_PATH);
+const xrayConfig = new XrayConfigManager();
 
 /**
  * GET /clients - Получить список всех клиентов
@@ -79,6 +81,7 @@ router.post('/', async (req, res, next) => {
 
     const uuid = uuidv4();
 
+    // Создаем клиента в базе данных
     const client = await clientModel.create({
       uuid,
       name,
@@ -87,6 +90,15 @@ router.post('/', async (req, res, next) => {
       subscription_days,
       traffic_limit_gb
     });
+
+    // Добавляем клиента в конфиг X-Ray
+    try {
+      await xrayConfig.addClient(uuid, name);
+      console.log(`Client ${name} (${uuid}) added to X-Ray config`);
+    } catch (xrayError) {
+      console.error('Failed to add client to X-Ray config:', xrayError.message);
+      // Не прерываем выполнение, клиент уже создан в БД
+    }
 
     res.status(201).json({
       success: true,
@@ -131,6 +143,8 @@ router.put('/:uuid', async (req, res, next) => {
 router.delete('/:uuid', async (req, res, next) => {
   try {
     const { uuid } = req.params;
+    
+    // Удаляем из базы данных
     const deleted = await clientModel.delete(uuid);
 
     if (!deleted) {
@@ -138,6 +152,15 @@ router.delete('/:uuid', async (req, res, next) => {
         success: false,
         error: 'Client not found'
       });
+    }
+
+    // Удаляем из конфига X-Ray
+    try {
+      await xrayConfig.removeClient(uuid);
+      console.log(`Client ${uuid} removed from X-Ray config`);
+    } catch (xrayError) {
+      console.error('Failed to remove client from X-Ray config:', xrayError.message);
+      // Не прерываем выполнение, клиент уже удален из БД
     }
 
     res.json({

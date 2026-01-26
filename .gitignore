@@ -1,0 +1,31 @@
+tutorial/
+generated/
+cert/
+*.key
+*.crt
+*.csr
+*.log
+clients.txt
+node_modules/
+temp/
+.kiro/
+.vscode/
+.DS_Store
+npm/
+package-lock.json
+.env
+upload.md
+serverjs.md
+replacements.txt
+* copy*.js
+*-copy*.js
+*-copy*.db
+* copy*.db
+*.db
+reset-db.js
+adminui.sh
+botadminui.sh
+stopadminui.sh
+stopadminuibot.sh
+yaronetworktool/
+план.txt

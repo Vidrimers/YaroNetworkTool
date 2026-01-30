@@ -208,6 +208,23 @@ router.get('/:uuid/subscription', async (req, res, next) => {
 });
 
 /**
+ * GET /clients/:uuid/traffic-total - Получить общий трафик за период
+ */
+router.get('/:uuid/traffic-total', async (req, res, next) => {
+  try {
+    const { uuid } = req.params;
+    const trafficData = await clientModel.getTotalTrafficForPeriod(uuid);
+
+    res.json({
+      success: true,
+      traffic: trafficData
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * POST /clients/:uuid/extend - Продлить подписку
  */
 router.post('/:uuid/extend', async (req, res, next) => {

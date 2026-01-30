@@ -297,6 +297,37 @@ class ClientModel {
   }
 
   /**
+   * Получить общий трафик за период (с даты сброса до текущего момента)
+   */
+  async getTotalTrafficForPeriod(uuid) {
+    const client = await this.getByUuid(uuid);
+    if (!client) {
+      throw new Error('Client not found');
+    }
+
+    // Получаем сумму трафика из traffic_logs с даты сброса
+    const result = await this.db.get(
+      `SELECT 
+        COALESCE(SUM(bytes_total), 0) as total_bytes
+       FROM traffic_logs 
+       WHERE client_uuid = ? 
+       AND date >= date(?)`,
+      [uuid, client.traffic_reset_date]
+    );
+
+    // Конвертируем байты в GB и добавляем текущий трафик
+    const totalFromLogs = (result.total_bytes || 0) / (1024 ** 3);
+    const totalTraffic = totalFromLogs + (client.traffic_used_gb || 0);
+
+    return {
+      total_gb: totalTraffic,
+      current_gb: client.traffic_used_gb || 0,
+      from_logs_gb: totalFromLogs,
+      reset_date: client.traffic_reset_date
+    };
+  }
+
+  /**
    * Закрыть соединение с БД
    */
   close() {

@@ -328,6 +328,53 @@ class ClientModel {
   }
 
   /**
+   * Получить трафик за последние N дней
+   */
+  async getTrafficForDays(uuid, days) {
+    const client = await this.getByUuid(uuid);
+    if (!client) {
+      throw new Error('Client not found');
+    }
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const result = await this.db.get(
+      `SELECT 
+        COALESCE(SUM(bytes_total), 0) as total_bytes
+       FROM traffic_logs 
+       WHERE client_uuid = ? 
+       AND date >= date(?)`,
+      [uuid, startDate.toISOString().split('T')[0]]
+    );
+
+    const trafficGb = (result.total_bytes || 0) / (1024 ** 3);
+
+    return {
+      days: days,
+      traffic_gb: trafficGb,
+      start_date: startDate.toISOString().split('T')[0]
+    };
+  }
+
+  /**
+   * Получить статистику трафика (день/неделя/месяц)
+   */
+  async getTrafficStats(uuid) {
+    const [day, week, month] = await Promise.all([
+      this.getTrafficForDays(uuid, 1),
+      this.getTrafficForDays(uuid, 7),
+      this.getTrafficForDays(uuid, 30)
+    ]);
+
+    return {
+      day: day.traffic_gb,
+      week: week.traffic_gb,
+      month: month.traffic_gb
+    };
+  }
+
+  /**
    * Закрыть соединение с БД
    */
   close() {

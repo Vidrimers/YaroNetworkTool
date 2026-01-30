@@ -225,6 +225,23 @@ router.get('/:uuid/traffic-total', async (req, res, next) => {
 });
 
 /**
+ * GET /clients/:uuid/traffic-stats - Получить статистику трафика (день/неделя/месяц)
+ */
+router.get('/:uuid/traffic-stats', async (req, res, next) => {
+  try {
+    const { uuid } = req.params;
+    const stats = await clientModel.getTrafficStats(uuid);
+
+    res.json({
+      success: true,
+      stats: stats
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * POST /clients/:uuid/extend - Продлить подписку
  */
 router.post('/:uuid/extend', async (req, res, next) => {

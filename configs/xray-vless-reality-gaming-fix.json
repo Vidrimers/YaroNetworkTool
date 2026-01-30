@@ -1,0 +1,142 @@
+{
+  "log": {
+    "loglevel": "warning",
+    "access": "/var/log/xray/access.log",
+    "error": "/var/log/xray/error.log"
+  },
+  "api": {
+    "tag": "api",
+    "services": ["StatsService"]
+  },
+  "stats": {},
+  "policy": {
+    "levels": {
+      "0": {
+        "statsUserUplink": true,
+        "statsUserDownlink": true
+      }
+    },
+    "system": {
+      "statsInboundUplink": true,
+      "statsInboundDownlink": true,
+      "statsOutboundUplink": true,
+      "statsOutboundDownlink": true
+    }
+  },
+  "inbounds": [
+    {
+      "port": 8443,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "70fc207d-2cb0-4ba4-9158-c9054b83374e",
+            "flow": "",
+            "email": "Админ"
+          },
+          {
+            "id": "eb1e0b4d-696b-4fad-932e-4d2f3a161125",
+            "flow": "",
+            "email": "Бим"
+          },
+          {
+            "id": "30bccf70-49ae-4850-ac3e-f4de4e955261",
+            "flow": "",
+            "email": "Мадест"
+          },
+          {
+            "id": "373e7bf5-c874-4eaf-a0de-ea8741c07e8f",
+            "flow": "",
+            "email": "Svrn"
+          },
+          {
+            "id": "49a3319d-1916-41dd-a88d-6de495262a68",
+            "flow": "",
+            "email": "Mexter"
+          },
+          {
+            "id": "3e8b6011-d8b9-4245-9a5c-31c9f5eafb1f",
+            "flow": "",
+            "email": "Тестик"
+          },
+          {
+            "id": "6ab37cfa-21fe-4b3e-9ccc-dd3f297c9778",
+            "flow": "",
+            "email": "Анна"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "xhttp",
+        "security": "reality",
+        "realitySettings": {
+          "show": false,
+          "dest": "www.microsoft.com:443",
+          "xver": 0,
+          "serverNames": ["www.microsoft.com"],
+          "privateKey": "-LjCdqufcyXRHQ3gq-rFczceLuIInPtER1KulPMC6FM",
+          "shortIds": ["fdb985c09b6b1ecd"]
+        },
+        "xhttpSettings": {
+          "path": "/",
+          "host": ""
+        },
+        "sockopt": {
+          "tcpKeepAliveInterval": 30,
+          "tcpKeepAliveIdle": 60,
+          "tcpFastOpen": true,
+          "mark": 255
+        }
+      },
+      "sniffing": {
+        "enabled": true,
+        "destOverride": ["http", "tls", "quic", "fakedns"]
+      }
+    },
+    {
+      "listen": "127.0.0.1",
+      "port": 10085,
+      "protocol": "dokodemo-door",
+      "settings": {
+        "address": "127.0.0.1"
+      },
+      "tag": "api"
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct",
+      "settings": {
+        "domainStrategy": "UseIP"
+      },
+      "streamSettings": {
+        "sockopt": {
+          "tcpKeepAliveInterval": 30,
+          "tcpKeepAliveIdle": 60,
+          "tcpFastOpen": true
+        }
+      }
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "inboundTag": ["api"],
+        "outboundTag": "api",
+        "type": "field"
+      },
+      {
+        "type": "field",
+        "ip": ["geoip:private"],
+        "outboundTag": "block"
+      }
+    ]
+  }
+}

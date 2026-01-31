@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS clients (
     traffic_used_gb REAL NOT NULL DEFAULT 0.0,
     traffic_reset_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
+    -- Индивидуальные цены (NULL = использовать стандартные)
+    custom_price_kaspa REAL,
+    max_devices INTEGER NOT NULL DEFAULT 2,
+    
     -- Статус
     status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'blocked', 'expired')),
     blocked_reason TEXT,

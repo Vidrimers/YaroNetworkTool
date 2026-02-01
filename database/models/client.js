@@ -157,6 +157,17 @@ class ClientModel {
       status: 'active'
     });
 
+    // Синхронизируем с Xray конфигом (добавляем клиента если его нет)
+    try {
+      const XrayConfigManager = (await import('../api/utils/xray-config.js')).default;
+      const xrayConfig = new XrayConfigManager();
+      await xrayConfig.addClient(uuid, client.name);
+      console.log(`[extendSubscription] Клиент ${client.name} (${uuid}) синхронизирован с Xray`);
+    } catch (error) {
+      console.error(`[extendSubscription] Ошибка синхронизации с Xray:`, error.message);
+      // Не бросаем ошибку, чтобы продление подписки в БД прошло успешно
+    }
+
     return this.getByUuid(uuid);
   }
 

@@ -14,6 +14,40 @@ class TrafficLogModel {
   }
 
   /**
+   * Добавить почасовую запись трафика (без UNIQUE constraint)
+   */
+  async addHourly(logData) {
+    const {
+      client_uuid,
+      bytes_uploaded = 0,
+      bytes_downloaded = 0,
+      bytes_total = 0,
+      connections_count = 1
+    } = logData;
+
+    const result = await this.db.run(
+      `INSERT INTO traffic_logs (
+        client_uuid,
+        bytes_uploaded, bytes_downloaded, bytes_total,
+        connections_count
+      ) VALUES (?, ?, ?, ?, ?)`,
+      [client_uuid, bytes_uploaded, bytes_downloaded, bytes_total, connections_count]
+    );
+
+    return this.db.get('SELECT * FROM traffic_logs WHERE id = ?', [result.lastID]);
+  }
+
+  /**
+   * Получить последнюю запись для клиента
+   */
+  async getLastRecord(client_uuid) {
+    return this.db.get(
+      'SELECT * FROM traffic_logs WHERE client_uuid = ? ORDER BY created_at DESC LIMIT 1',
+      [client_uuid]
+    );
+  }
+
+  /**
    * Добавить запись трафика
    */
   async add(logData) {
@@ -73,22 +107,22 @@ class TrafficLogModel {
    * Получить логи клиента
    */
   async getByClient(client_uuid, options = {}) {
-    const { startDate, endDate, limit = 30 } = options;
+    const { startDate, endDate, limit = 100 } = options;
 
     let query = 'SELECT * FROM traffic_logs WHERE client_uuid = ?';
     const params = [client_uuid];
 
     if (startDate) {
-      query += ' AND date >= ?';
+      query += ' AND created_at >= ?';
       params.push(startDate);
     }
 
     if (endDate) {
-      query += ' AND date <= ?';
+      query += ' AND created_at <= ?';
       params.push(endDate);
     }
 
-    query += ' ORDER BY date DESC LIMIT ?';
+    query += ' ORDER BY created_at DESC LIMIT ?';
     params.push(limit);
 
     return this.db.all(query, params);
@@ -103,24 +137,23 @@ class TrafficLogModel {
     let query = `
       SELECT 
         client_uuid,
-        COUNT(*) as days_count,
+        COUNT(*) as records_count,
         SUM(bytes_uploaded) as total_uploaded,
         SUM(bytes_downloaded) as total_downloaded,
         SUM(bytes_total) as total_bytes,
-        SUM(connections_count) as total_connections,
-        AVG(bytes_total) as avg_daily_bytes
+        SUM(connections_count) as total_connections
       FROM traffic_logs 
       WHERE client_uuid = ?
     `;
     const params = [client_uuid];
 
     if (startDate) {
-      query += ' AND date >= ?';
+      query += ' AND created_at >= ?';
       params.push(startDate);
     }
 
     if (endDate) {
-      query += ' AND date <= ?';
+      query += ' AND created_at <= ?';
       params.push(endDate);
     }
 
@@ -131,7 +164,6 @@ class TrafficLogModel {
       stats.total_uploaded_gb = (stats.total_uploaded / (1024 ** 3)).toFixed(2);
       stats.total_downloaded_gb = (stats.total_downloaded / (1024 ** 3)).toFixed(2);
       stats.total_gb = (stats.total_bytes / (1024 ** 3)).toFixed(2);
-      stats.avg_daily_gb = (stats.avg_daily_bytes / (1024 ** 3)).toFixed(2);
     }
 
     return stats;
@@ -154,12 +186,12 @@ class TrafficLogModel {
     const params = [];
 
     if (startDate) {
-      query += ' AND date >= ?';
+      query += ' AND created_at >= ?';
       params.push(startDate);
     }
 
     if (endDate) {
-      query += ' AND date <= ?';
+      query += ' AND created_at <= ?';
       params.push(endDate);
     }
 
@@ -179,18 +211,21 @@ class TrafficLogModel {
    * Получить дневную статистику
    */
   async getDailyStats(date) {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
     const query = `
       SELECT 
-        date,
         COUNT(DISTINCT client_uuid) as active_clients,
         SUM(bytes_total) as total_bytes,
         SUM(connections_count) as total_connections
       FROM traffic_logs 
-      WHERE date = ?
-      GROUP BY date
+      WHERE created_at >= ? AND created_at <= ?
     `;
 
-    const stats = await this.db.get(query, [date]);
+    const stats = await this.db.get(query, [startOfDay.toISOString(), endOfDay.toISOString()]);
 
     if (stats) {
       stats.total_gb = (stats.total_bytes / (1024 ** 3)).toFixed(2);
@@ -205,11 +240,10 @@ class TrafficLogModel {
   async deleteOld(daysToKeep = 90) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-    const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
 
     const result = await this.db.run(
-      'DELETE FROM traffic_logs WHERE date < ?',
-      [cutoffDateStr]
+      'DELETE FROM traffic_logs WHERE created_at < ?',
+      [cutoffDate.toISOString()]
     );
 
     return result.changes;

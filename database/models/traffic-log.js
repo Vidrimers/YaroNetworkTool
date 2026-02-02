@@ -25,19 +25,24 @@ class TrafficLogModel {
       connections_count = 1
     } = logData;
 
-    const stmt = await this.db.run(
-      `INSERT INTO traffic_logs (
-        client_uuid,
-        bytes_uploaded, bytes_downloaded, bytes_total,
-        connections_count
-      ) VALUES (?, ?, ?, ?, ?)`,
-      [client_uuid, bytes_uploaded, bytes_downloaded, bytes_total, connections_count]
-    );
-
-    // В sqlite3 lastID находится в this, а не в result
-    const insertId = stmt.lastID || this.db.lastID;
-    
-    return this.db.get('SELECT * FROM traffic_logs WHERE id = ?', [insertId]);
+    return new Promise((resolve, reject) => {
+      this.db.run(
+        `INSERT INTO traffic_logs (
+          client_uuid,
+          bytes_uploaded, bytes_downloaded, bytes_total,
+          connections_count
+        ) VALUES (?, ?, ?, ?, ?)`,
+        [client_uuid, bytes_uploaded, bytes_downloaded, bytes_total, connections_count],
+        function(err) {
+          if (err) {
+            reject(err);
+          } else {
+            // this.lastID доступен в callback функции
+            resolve({ id: this.lastID });
+          }
+        }
+      );
+    });
   }
 
   /**

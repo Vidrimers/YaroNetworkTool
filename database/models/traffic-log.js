@@ -25,7 +25,7 @@ class TrafficLogModel {
       connections_count = 1
     } = logData;
 
-    const result = await this.db.run(
+    const stmt = await this.db.run(
       `INSERT INTO traffic_logs (
         client_uuid,
         bytes_uploaded, bytes_downloaded, bytes_total,
@@ -34,7 +34,10 @@ class TrafficLogModel {
       [client_uuid, bytes_uploaded, bytes_downloaded, bytes_total, connections_count]
     );
 
-    return this.db.get('SELECT * FROM traffic_logs WHERE id = ?', [result.lastID]);
+    // В sqlite3 lastID находится в this, а не в result
+    const insertId = stmt.lastID || this.db.lastID;
+    
+    return this.db.get('SELECT * FROM traffic_logs WHERE id = ?', [insertId]);
   }
 
   /**

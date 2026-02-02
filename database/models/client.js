@@ -355,8 +355,8 @@ class ClientModel {
         COALESCE(SUM(bytes_total), 0) as total_bytes
        FROM traffic_logs 
        WHERE client_uuid = ? 
-       AND date >= date(?)`,
-      [uuid, startDate.toISOString().split('T')[0]]
+       AND created_at >= ?`,
+      [uuid, startDate.toISOString()]
     );
 
     const trafficGb = (result.total_bytes || 0) / (1024 ** 3);
@@ -364,7 +364,7 @@ class ClientModel {
     return {
       days: days,
       traffic_gb: trafficGb,
-      start_date: startDate.toISOString().split('T')[0]
+      start_date: startDate.toISOString()
     };
   }
 

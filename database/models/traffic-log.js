@@ -25,24 +25,18 @@ class TrafficLogModel {
       connections_count = 1
     } = logData;
 
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        `INSERT INTO traffic_logs (
-          client_uuid,
-          bytes_uploaded, bytes_downloaded, bytes_total,
-          connections_count
-        ) VALUES (?, ?, ?, ?, ?)`,
-        [client_uuid, bytes_uploaded, bytes_downloaded, bytes_total, connections_count],
-        function(err) {
-          if (err) {
-            reject(err);
-          } else {
-            // this.lastID доступен в callback функции
-            resolve({ id: this.lastID });
-          }
-        }
-      );
-    });
+    await this.db.run(
+      `INSERT INTO traffic_logs (
+        client_uuid,
+        bytes_uploaded, bytes_downloaded, bytes_total,
+        connections_count
+      ) VALUES (?, ?, ?, ?, ?)`,
+      [client_uuid, bytes_uploaded, bytes_downloaded, bytes_total, connections_count]
+    );
+
+    // Получаем ID последней вставленной записи
+    const result = await this.db.get('SELECT last_insert_rowid() as id');
+    return { id: result.id };
   }
 
   /**

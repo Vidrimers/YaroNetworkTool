@@ -23,7 +23,7 @@ class ClientModel {
       telegram_id = null,
       email = null,
       subscription_days = 30,
-      traffic_limit_gb = 200.0
+      traffic_limit_gb = 100.0
     } = clientData;
 
     const subscription_start = new Date().toISOString();

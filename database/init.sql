@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS clients (
     subscription_end DATETIME NOT NULL,
     
     -- Трафик
-    traffic_limit_gb REAL NOT NULL DEFAULT 200.0,
+    traffic_limit_gb REAL NOT NULL DEFAULT 100.0,
     traffic_used_gb REAL NOT NULL DEFAULT 0.0,
     traffic_reset_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     

@@ -69,7 +69,7 @@ router.post('/', async (req, res, next) => {
       telegram_id,
       email,
       subscription_days = 30,
-      traffic_limit_gb = 200
+      traffic_limit_gb = 100
     } = req.body;
 
     if (!name) {

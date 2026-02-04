@@ -148,6 +148,6 @@ QUICK-DEPLOY.md
 # ============================================================================
 database/*.backup.*
 database/vpn.db
-
+xray-config-backup.json
 
 протокольчики

@@ -11,11 +11,11 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-// Загрузка переменных окружения
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Загрузка переменных окружения
+dotenv.config({ path: join(__dirname, '..', '.env') });
 
 // Конфигурация
 const PORT = process.env.API_PORT || 3000;

@@ -10,12 +10,6 @@ const router = express.Router();
 const DB_PATH = process.env.DB_PATH || './database/vpn.db';
 const clientModel = new ClientModel(DB_PATH);
 
-const SERVER_IP = process.env.SERVER_IP;
-const XRAY_PUBLIC_KEY = process.env.XRAY_PUBLIC_KEY;
-const XRAY_SHORT_ID = process.env.XRAY_SHORT_ID;
-const XRAY_SNI = process.env.XRAY_SNI || 'www.microsoft.com';
-const SS2022_PASSWORD = process.env.SS2022_PASSWORD;
-
 /**
  * GET /subscription/:uuid - Получить подписку клиента
  */
@@ -23,6 +17,13 @@ router.get('/:uuid', async (req, res, next) => {
   try {
     const { uuid } = req.params;
     const { format = 'base64' } = req.query;
+    
+    // Читаем переменные окружения внутри обработчика
+    const SERVER_IP = process.env.SERVER_IP;
+    const XRAY_PUBLIC_KEY = process.env.XRAY_PUBLIC_KEY;
+    const XRAY_SHORT_ID = process.env.XRAY_SHORT_ID;
+    const XRAY_SNI = process.env.XRAY_SNI || 'www.microsoft.com';
+    const SS2022_PASSWORD = process.env.SS2022_PASSWORD;
     
     const client = await clientModel.getByUuid(uuid);
     

@@ -53,20 +53,19 @@ export function generateSubscription({
     flow: ''
   }));
 
-  // 3. VLESS Reality H2 (8445)
+  // 3. VLESS Reality gRPC (8445)
   nodes.push(generateVlessLink({
-    name: `${clientName} - Reality H2`,
+    name: `${clientName} - Reality gRPC`,
     uuid,
     serverIp,
     port: 8445,
-    network: 'h2',
+    network: 'grpc',
     security: 'reality',
     publicKey,
     shortId,
     sni,
     flow: '',
-    path: '/',
-    host: sni
+    serviceName: 'vless-grpc'
   }));
 
   // 4. VLESS Reality Vision (8446)
@@ -136,7 +135,8 @@ function generateVlessLink({
   sni = '',
   flow = '',
   path = '',
-  host = ''
+  host = '',
+  serviceName = ''
 }) {
   const params = new URLSearchParams({
     encryption: 'none',
@@ -150,6 +150,7 @@ function generateVlessLink({
   if (shortId) params.append('sid', shortId);
   if (path) params.append('path', path);
   if (host) params.append('host', host);
+  if (serviceName) params.append('serviceName', serviceName);
   
   // Fingerprint для Reality
   if (security === 'reality') {

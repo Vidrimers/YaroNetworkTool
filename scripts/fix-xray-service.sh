@@ -111,7 +111,8 @@ echo "9️⃣ Проверка прослушиваемых портов..."
 sleep 1
 LISTENING=0
 for PORT in "${PORTS[@]}"; do
-    if netstat -tulpn 2>/dev/null | grep -q "xray.*:$PORT "; then
+    # Проверяем и IPv4 и IPv6
+    if ss -tulpn 2>/dev/null | grep -q "xray.*:$PORT "; then
         echo -e "${GREEN}✅ Порт $PORT прослушивается${NC}"
         LISTENING=$((LISTENING + 1))
     else

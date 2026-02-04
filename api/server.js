@@ -68,10 +68,12 @@ app.get('/api/v1', (req, res) => {
 import clientsRouter from './routes/clients.js';
 import statsRouter from './routes/stats.js';
 import extensionRequestsRouter from './routes/extension-requests.js';
+import subscriptionRouter from './routes/subscription.js';
 
 app.use('/api/clients', clientsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/extension-requests', extensionRequestsRouter);
+app.use('/subscription', subscriptionRouter);
 
 // 404 handler
 app.use((req, res) => {

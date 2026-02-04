@@ -62,25 +62,61 @@ class XrayConfigManager {
     try {
       const config = this.readConfig();
       
-      if (!config.inbounds || !config.inbounds[0] || !config.inbounds[0].settings) {
-        throw new Error('Invalid X-Ray config structure');
+      if (!config.inbounds || config.inbounds.length === 0) {
+        throw new Error('No inbounds found in X-Ray config');
       }
 
-      const clients = config.inbounds[0].settings.clients || [];
-      
-      const existingClient = clients.find(c => c.id === uuid);
-      if (existingClient) {
-        console.log(`Client ${uuid} already exists in X-Ray config`);
-        return true;
+      // Добавляем клиента во все inbound'ы
+      for (let i = 0; i < config.inbounds.length; i++) {
+        const inbound = config.inbounds[i];
+        const protocol = inbound.protocol;
+        
+        if (!inbound.settings) {
+          inbound.settings = {};
+        }
+        
+        if (!inbound.settings.clients) {
+          inbound.settings.clients = [];
+        }
+        
+        const clients = inbound.settings.clients;
+        
+        // Проверяем, существует ли клиент
+        const existingClient = clients.find(c => {
+          if (protocol === 'trojan') {
+            return c.password === uuid;
+          } else {
+            return c.id === uuid;
+          }
+        });
+        
+        if (existingClient) {
+          console.log(`Client ${uuid} already exists in inbound ${i} (${protocol})`);
+          continue;
+        }
+        
+        // Добавляем клиента в зависимости от протокола
+        if (protocol === 'vless') {
+          // Проверяем, нужен ли flow для Vision (порт 8446)
+          const isVision = inbound.port === 8446;
+          clients.push({
+            id: uuid,
+            flow: isVision ? 'xtls-rprx-vision' : '',
+            email: email || uuid.substring(0, 8)
+          });
+        } else if (protocol === 'trojan') {
+          clients.push({
+            password: uuid,
+            email: email || uuid.substring(0, 8)
+          });
+        } else if (protocol === 'shadowsocks') {
+          // SS2022 использует один пароль для всех, не добавляем клиентов
+          console.log(`Skipping shadowsocks inbound (uses shared password)`);
+          continue;
+        }
+        
+        config.inbounds[i].settings.clients = clients;
       }
-
-      clients.push({
-        id: uuid,
-        flow: '',
-        email: email || uuid.substring(0, 8)
-      });
-
-      config.inbounds[0].settings.clients = clients;
       
       this.writeConfig(config);
       
@@ -93,7 +129,7 @@ class XrayConfigManager {
 
       this.restartXray();
       
-      console.log(`Client ${uuid} added to X-Ray config`);
+      console.log(`Client ${uuid} added to all inbounds`);
       return true;
       
     } catch (error) {
@@ -110,19 +146,41 @@ class XrayConfigManager {
     try {
       const config = this.readConfig();
       
-      if (!config.inbounds || !config.inbounds[0] || !config.inbounds[0].settings) {
-        throw new Error('Invalid X-Ray config structure');
+      if (!config.inbounds || config.inbounds.length === 0) {
+        throw new Error('No inbounds found in X-Ray config');
       }
 
-      const clients = config.inbounds[0].settings.clients || [];
-      const filteredClients = clients.filter(c => c.id !== uuid);
+      let removed = false;
+
+      // Удаляем клиента из всех inbound'ов
+      for (let i = 0; i < config.inbounds.length; i++) {
+        const inbound = config.inbounds[i];
+        const protocol = inbound.protocol;
+        
+        if (!inbound.settings || !inbound.settings.clients) {
+          continue;
+        }
+        
+        const clients = inbound.settings.clients;
+        const filteredClients = clients.filter(c => {
+          if (protocol === 'trojan') {
+            return c.password !== uuid;
+          } else {
+            return c.id !== uuid;
+          }
+        });
+        
+        if (clients.length !== filteredClients.length) {
+          removed = true;
+          config.inbounds[i].settings.clients = filteredClients;
+          console.log(`Client ${uuid} removed from inbound ${i} (${protocol})`);
+        }
+      }
       
-      if (clients.length === filteredClients.length) {
-        console.log(`Client ${uuid} not found in X-Ray config`);
+      if (!removed) {
+        console.log(`Client ${uuid} not found in any inbound`);
         return true;
       }
-
-      config.inbounds[0].settings.clients = filteredClients;
       
       this.writeConfig(config);
       
@@ -135,7 +193,7 @@ class XrayConfigManager {
 
       this.restartXray();
       
-      console.log(`Client ${uuid} removed from X-Ray config`);
+      console.log(`Client ${uuid} removed from all inbounds`);
       return true;
       
     } catch (error) {
@@ -150,11 +208,40 @@ class XrayConfigManager {
     try {
       const config = this.readConfig();
       
-      if (!config.inbounds || !config.inbounds[0] || !config.inbounds[0].settings) {
+      if (!config.inbounds || config.inbounds.length === 0) {
         return [];
       }
 
-      return config.inbounds[0].settings.clients || [];
+      // Собираем уникальных клиентов из всех inbound'ов
+      const clientsMap = new Map();
+      
+      for (const inbound of config.inbounds) {
+        if (!inbound.settings || !inbound.settings.clients) {
+          continue;
+        }
+        
+        const protocol = inbound.protocol;
+        
+        for (const client of inbound.settings.clients) {
+          const uuid = protocol === 'trojan' ? client.password : client.id;
+          
+          if (!clientsMap.has(uuid)) {
+            clientsMap.set(uuid, {
+              uuid: uuid,
+              email: client.email || '',
+              protocols: []
+            });
+          }
+          
+          clientsMap.get(uuid).protocols.push({
+            protocol: protocol,
+            port: inbound.port,
+            flow: client.flow || ''
+          });
+        }
+      }
+      
+      return Array.from(clientsMap.values());
     } catch (error) {
       throw new Error(`Failed to list clients: ${error.message}`);
     }

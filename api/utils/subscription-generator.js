@@ -25,11 +25,14 @@ export function generateSubscription({
 }) {
   const nodes = [];
 
+  // Для Reality протоколов используем IP адрес вместо домена
+  const realityServerIp = serverIp.includes('.') && !serverIp.match(/[a-z]/i) ? serverIp : '89.124.70.156';
+  
   // 1. VLESS Reality XHTTP (8443)
   nodes.push(generateVlessLink({
     name: `${clientName} - Reality XHTTP`,
     uuid,
-    serverIp,
+    serverIp: realityServerIp,
     port: 8443,
     network: 'xhttp',
     security: 'reality',
@@ -43,7 +46,7 @@ export function generateSubscription({
   nodes.push(generateVlessLink({
     name: `${clientName} - Reality TCP`,
     uuid,
-    serverIp,
+    serverIp: realityServerIp,
     port: 8444,
     network: 'tcp',
     security: 'reality',
@@ -57,7 +60,7 @@ export function generateSubscription({
   nodes.push(generateVlessLink({
     name: `${clientName} - Reality gRPC`,
     uuid,
-    serverIp,
+    serverIp: realityServerIp,
     port: 8445,
     network: 'grpc',
     security: 'reality',
@@ -72,7 +75,7 @@ export function generateSubscription({
   nodes.push(generateVlessLink({
     name: `${clientName} - Reality Vision`,
     uuid,
-    serverIp,
+    serverIp: realityServerIp,
     port: 8446,
     network: 'tcp',
     security: 'reality',
@@ -86,7 +89,7 @@ export function generateSubscription({
   nodes.push(generateTrojanLink({
     name: `${clientName} - Trojan gRPC`,
     password: uuid,
-    serverIp,
+    serverIp: realityServerIp,
     port: 8447,
     network: 'grpc',
     serviceName: 'grpc'

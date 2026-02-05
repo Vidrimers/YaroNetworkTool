@@ -322,7 +322,7 @@ class ClientModel {
         COALESCE(SUM(bytes_total), 0) as total_bytes
        FROM traffic_logs 
        WHERE client_uuid = ? 
-       AND date >= date(?)`,
+       AND created_at >= datetime(?)`,
       [uuid, client.traffic_reset_date]
     );
 

@@ -348,7 +348,12 @@ class ClientModel {
     }
 
     const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
+    // Для 1 дня берем последние 24 часа, а не с начала вчерашнего дня
+    if (days === 1) {
+      startDate.setHours(startDate.getHours() - 24);
+    } else {
+      startDate.setDate(startDate.getDate() - days);
+    }
 
     const result = await this.db.get(
       `SELECT 

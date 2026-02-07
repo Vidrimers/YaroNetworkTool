@@ -87,7 +87,7 @@ export function generateSubscription({
 
   // 5. VLESS WebSocket TLS через 443 (обход блокировки)
   nodes.push(generateVlessLink({
-    name: `${clientName} - VLESS WS TLS`,
+    name: `${clientName} - VLESS WS TLS 443`,
     uuid,
     serverIp,
     port: 443,
@@ -97,7 +97,19 @@ export function generateSubscription({
     path: '/vless-ws'
   }));
 
-  // 6. Shadowsocks 2022 (8448)
+  // 6. VLESS WebSocket TLS через 2053 (обход блокировки порта 443)
+  nodes.push(generateVlessLink({
+    name: `${clientName} - VLESS WS TLS 2053`,
+    uuid,
+    serverIp,
+    port: 2053,
+    network: 'ws',
+    security: 'tls',
+    sni: serverIp,
+    path: '/vless-ws'
+  }));
+
+  // 7. Shadowsocks 2022 (8448)
   if (ss2022Password) {
     nodes.push(generateShadowsocksLink({
       name: `${clientName} - SS2022`,
@@ -108,7 +120,7 @@ export function generateSubscription({
     }));
   }
 
-  // 7. VLESS WebSocket (8449)
+  // 8. VLESS WebSocket (8449)
   nodes.push(generateVlessLink({
     name: `${clientName} - VLESS WS`,
     uuid,

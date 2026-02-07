@@ -85,14 +85,16 @@ export function generateSubscription({
     flow: 'xtls-rprx-vision'
   }));
 
-  // 5. Trojan gRPC (8447)
-  nodes.push(generateTrojanLink({
-    name: `${clientName} - Trojan gRPC`,
-    password: uuid,
-    serverIp: realityServerIp,
-    port: 8447,
-    network: 'grpc',
-    serviceName: 'grpc'
+  // 5. VLESS WebSocket TLS через 443 (обход блокировки)
+  nodes.push(generateVlessLink({
+    name: `${clientName} - VLESS WS TLS`,
+    uuid,
+    serverIp,
+    port: 443,
+    network: 'ws',
+    security: 'tls',
+    sni: serverIp,
+    path: '/vless-ws'
   }));
 
   // 6. Shadowsocks 2022 (8448)

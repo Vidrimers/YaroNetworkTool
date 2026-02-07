@@ -149,5 +149,10 @@ QUICK-DEPLOY.md
 database/*.backup.*
 database/vpn.db
 configs/xray-config-backup.json
+xray-vless-reality-RESTORED.json
+xray-vless-reality.json.backup2
+test/
+setup-vpn-via-443.sh
+nginx-1xbetlineboom.xyz-with-vpn
 
 протокольчики

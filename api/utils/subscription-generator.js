@@ -12,6 +12,7 @@
  * @param {string} params.sni - Server Name Indication
  * @param {string} params.ss2022Password - Пароль для Shadowsocks 2022
  * @param {string} params.clientName - Имя клиента
+ * @param {boolean} params.includeRussianProxy - Включить российский прокси-сервер
  * @returns {Object} Объект подписки
  */
 export function generateSubscription({
@@ -21,12 +22,18 @@ export function generateSubscription({
   shortId,
   sni = 'www.microsoft.com',
   ss2022Password,
-  clientName = 'MyVPN'
+  clientName = 'MyVPN',
+  includeRussianProxy = true
 }) {
   const nodes = [];
 
   // Для Reality протоколов используем IP адрес вместо домена
   const realityServerIp = serverIp.includes('.') && !serverIp.match(/[a-z]/i) ? serverIp : '89.124.70.156';
+  
+  // Российский прокси-сервер
+  const russianProxyIp = '185.244.172.188';
+  
+  // === ПРЯМОЕ ПОДКЛЮЧЕНИЕ (vdsina) ===
   
   // 1. VLESS Reality XHTTP (8443)
   nodes.push(generateVlessLink({
@@ -85,7 +92,70 @@ export function generateSubscription({
     flow: 'xtls-rprx-vision'
   }));
 
-  // 5. VLESS WebSocket TLS через 443 (обход блокировки)
+  // === РОССИЙСКИЙ ПРОКСИ (для обхода блокировок) ===
+  
+  if (includeRussianProxy) {
+    // 5. VLESS Reality XHTTP через российский прокси (8443)
+    nodes.push(generateVlessLink({
+      name: `${clientName} - RU Proxy - Reality XHTTP`,
+      uuid,
+      serverIp: russianProxyIp,
+      port: 8443,
+      network: 'xhttp',
+      security: 'reality',
+      publicKey,
+      shortId,
+      sni,
+      flow: ''
+    }));
+
+    // 6. VLESS Reality TCP через российский прокси (8444)
+    nodes.push(generateVlessLink({
+      name: `${clientName} - RU Proxy - Reality TCP`,
+      uuid,
+      serverIp: russianProxyIp,
+      port: 8444,
+      network: 'tcp',
+      security: 'reality',
+      publicKey,
+      shortId,
+      sni,
+      flow: ''
+    }));
+
+    // 7. VLESS Reality gRPC через российский прокси (8445)
+    nodes.push(generateVlessLink({
+      name: `${clientName} - RU Proxy - Reality gRPC`,
+      uuid,
+      serverIp: russianProxyIp,
+      port: 8445,
+      network: 'grpc',
+      security: 'reality',
+      publicKey,
+      shortId,
+      sni,
+      flow: '',
+      serviceName: 'vless-grpc'
+    }));
+
+    // 8. VLESS Reality Vision через российский прокси (8446)
+    nodes.push(generateVlessLink({
+      name: `${clientName} - RU Proxy - Reality Vision`,
+      uuid,
+      serverIp: russianProxyIp,
+      port: 8446,
+      network: 'tcp',
+      security: 'reality',
+      publicKey,
+      shortId,
+      sni,
+      flow: 'xtls-rprx-vision'
+    }));
+  }
+
+  // === WEBSOCKET (через Nginx) ===
+
+  // 9. VLESS WebSocket TLS через 443 (обход блокировки)
   nodes.push(generateVlessLink({
     name: `${clientName} - VLESS WS TLS 443`,
     uuid,
@@ -97,7 +167,7 @@ export function generateSubscription({
     path: '/vless-ws'
   }));
 
-  // 6. VLESS WebSocket TLS через 2053 (обход блокировки порта 443)
+  // 10. VLESS WebSocket TLS через 2053 (обход блокировки порта 443)
   nodes.push(generateVlessLink({
     name: `${clientName} - VLESS WS TLS 2053`,
     uuid,
@@ -109,7 +179,9 @@ export function generateSubscription({
     path: '/vless-ws'
   }));
 
-  // 7. Shadowsocks 2022 (8448)
+  // === ДОПОЛНИТЕЛЬНЫЕ ПРОТОКОЛЫ ===
+
+  // 11. Shadowsocks 2022 (8448)
   if (ss2022Password) {
     nodes.push(generateShadowsocksLink({
       name: `${clientName} - SS2022`,
@@ -120,7 +192,7 @@ export function generateSubscription({
     }));
   }
 
-  // 8. VLESS WebSocket (8449)
+  // 12. VLESS WebSocket (8449)
   nodes.push(generateVlessLink({
     name: `${clientName} - VLESS WS`,
     uuid,

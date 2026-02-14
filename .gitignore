@@ -154,5 +154,11 @@ xray-vless-reality.json.backup2
 test/
 setup-vpn-via-443.sh
 nginx-1xbetlineboom.xyz-with-vpn
+configs/nginx-multi-variant.conf
+configs/russian-proxy-nginx.conf
+scripts/clean-install-nginx.sh
+scripts/fix-russian-proxy-nginx.sh
+scripts/setup-russian-proxy.sh
+scripts/setup-ssl-russian-proxy.sh
 
 протокольчики

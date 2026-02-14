@@ -27,10 +27,6 @@ server {
     ssl_protocols TLSv1.2;
     ssl_ciphers HIGH:!aNULL:!MD5;
     ssl_prefer_server_ciphers on;
-    
-    # Отключаем ALPN (Application-Layer Protocol Negotiation) чтобы форсировать HTTP/1.1
-    # Это заставит клиентов использовать только HTTP/1.1
-    ssl_alpn http/1.1;
 
     # VPN WebSocket (новый путь для обхода блокировки)
     location /vless-ws {
@@ -90,7 +86,6 @@ server {
 
     # DOWNGRADE: Только TLS 1.2
     ssl_protocols TLSv1.2;
-    ssl_alpn http/1.1;
 
     return 301 https://1xbetlineboom.xyz$request_uri;
 }
@@ -120,7 +115,6 @@ server {
 
     # DOWNGRADE: Только TLS 1.2
     ssl_protocols TLSv1.2;
-    ssl_alpn http/1.1;
 
     return 301 https://1xbetlineboom.xyz$request_uri;
 }

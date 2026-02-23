@@ -160,5 +160,7 @@ scripts/clean-install-nginx.sh
 scripts/fix-russian-proxy-nginx.sh
 scripts/setup-russian-proxy.sh
 scripts/setup-ssl-russian-proxy.sh
+scripts/setup-subdomain-ru.sh
+prompt.md
 
 протокольчики

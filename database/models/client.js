@@ -160,7 +160,7 @@ class ClientModel {
     // Синхронизируем с Xray конфигом (добавляем клиента если его нет)
     try {
       console.log(`[extendSubscription] Начинаем синхронизацию с Xray для клиента ${client.name} (${uuid})`);
-      const XrayConfigManager = (await import('../api/utils/xray-config.js')).default;
+      const XrayConfigManager = (await import('../../api/utils/xray-config.js')).default;
       const xrayConfig = new XrayConfigManager();
       await xrayConfig.addClient(uuid, client.name);
       console.log(`[extendSubscription] ✅ Клиент ${client.name} (${uuid}) успешно добавлен в Xray`);

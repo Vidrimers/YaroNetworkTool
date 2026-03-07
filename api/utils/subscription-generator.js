@@ -181,7 +181,7 @@ export function generateSubscription({
 
   // === ДОПОЛНИТЕЛЬНЫЕ ПРОТОКОЛЫ ===
 
-  // 11. Shadowsocks 2022 (8448)
+  // 11. Shadowsocks 2022 (8448) - прямое подключение
   if (ss2022Password) {
     nodes.push(generateShadowsocksLink({
       name: `${clientName} - SS2022`,
@@ -192,7 +192,31 @@ export function generateSubscription({
     }));
   }
 
-  // 12. VLESS WebSocket (8449)
+  // 12. Shadowsocks 2022 + WebSocket (8450) - обфускация
+  if (ss2022Password) {
+    nodes.push(generateShadowsocksLink({
+      name: `${clientName} - SS2022 WS`,
+      password: ss2022Password,
+      serverIp,
+      port: 8450,
+      method: '2022-blake3-aes-128-gcm',
+      plugin: 'v2ray-plugin',
+      pluginOpts: 'path=/ss-ws'
+    }));
+  }
+
+  // 13. Shadowsocks 2022 через российский прокси (8448)
+  if (ss2022Password && includeRussianProxy) {
+    nodes.push(generateShadowsocksLink({
+      name: `${clientName} - RU Proxy - SS2022`,
+      password: ss2022Password,
+      serverIp: russianProxyIp,
+      port: 8448,
+      method: '2022-blake3-aes-128-gcm'
+    }));
+  }
+
+  // 14. VLESS WebSocket (8449)
   nodes.push(generateVlessLink({
     name: `${clientName} - VLESS WS`,
     uuid,
@@ -280,13 +304,26 @@ function generateShadowsocksLink({
   password,
   serverIp,
   port,
-  method
+  method,
+  plugin = '',
+  pluginOpts = ''
 }) {
   // Формат: ss://method:password@server:port#name
   const userInfo = `${method}:${password}`;
   const userInfoBase64 = Buffer.from(userInfo).toString('base64');
   
-  return `ss://${userInfoBase64}@${serverIp}:${port}#${encodeURIComponent(name)}`;
+  let link = `ss://${userInfoBase64}@${serverIp}:${port}`;
+  
+  // Добавляем параметры плагина если есть
+  if (plugin) {
+    const params = new URLSearchParams();
+    params.append('plugin', `${plugin};${pluginOpts}`);
+    link += `?${params.toString()}`;
+  }
+  
+  link += `#${encodeURIComponent(name)}`;
+  
+  return link;
 }
 
 /**

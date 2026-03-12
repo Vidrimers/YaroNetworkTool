@@ -234,7 +234,7 @@ export function generateSubscription({
     name: `${clientName} - Hysteria2`,
     password: generateHysteria2Password(uuid),
     serverIp: realityServerIp, // 89.124.70.156
-    port: process.env.HYSTERIA2_PORT_RANGE || '20000-30000',
+    port: process.env.HYSTERIA2_PORT || '25000', // Используем один порт
     obfs: {
       type: 'salamander',
       password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
@@ -247,7 +247,7 @@ export function generateSubscription({
       name: `${clientName} - RU Proxy - Hysteria2`,
       password: generateHysteria2Password(uuid),
       serverIp: russianProxyIp, // 185.244.172.188
-      port: process.env.HYSTERIA2_PORT_RANGE || '20000-30000',
+      port: process.env.HYSTERIA2_PORT || '25000', // Используем один порт
       obfs: {
         type: 'salamander',
         password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
@@ -403,8 +403,11 @@ function generateHysteria2Link({
   port,
   obfs = null
 }) {
-  // Hysteria2 использует простой формат: hy2://password@server:port
-  let link = `hy2://${password}@${serverIp}:${port}`;
+  // Hysteria2 использует стандартный формат: hysteria2://password@server:port
+  // Если порт содержит диапазон, используем первый порт
+  const singlePort = port.includes('-') ? port.split('-')[0] : port;
+  
+  let link = `hysteria2://${password}@${serverIp}:${singlePort}`;
   
   if (obfs) {
     const params = new URLSearchParams();
@@ -428,24 +431,24 @@ function generateNaiveProxyLink({
   port,
   path = '/'
 }) {
-  // NaiveProxy использует формат: naive+https://username:password@server:port#name
-  return `naive+https://${username}:${password}@${serverIp}:${port}${path}#${encodeURIComponent(name)}`;
+  // NaiveProxy использует стандартный формат: https://username:password@server:port/path#name
+  return `https://${username}:${password}@${serverIp}:${port}${path}#${encodeURIComponent(name)}`;
 }
 
 /**
  * Генерирует пароль для Hysteria2 на основе UUID
  */
 function generateHysteria2Password(uuid) {
-  // Используем первые 16 символов UUID + суффикс
-  return uuid.substring(0, 16) + '_hy2';
+  // Используем полный UUID для пароля
+  return uuid + '_hy2';
 }
 
 /**
  * Генерирует пароль для NaiveProxy на основе UUID
  */
 function generateNaiveProxyPassword(uuid) {
-  // Используем последние 16 символов UUID + суффикс
-  return uuid.substring(16) + '_naive';
+  // Используем полный UUID для пароля
+  return uuid + '_naive';
 }
 
 export default {

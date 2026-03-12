@@ -262,7 +262,7 @@ export function generateSubscription({
     name: `${clientName} - NaiveProxy`,
     username: process.env.NAIVEPROXY_USERNAME || 'user1',
     password: process.env.NAIVEPROXY_PASSWORD || 'password123',
-    serverIp: serverIp, // Используем домен
+    serverIp: '89.124.70.156', // Используем IP вместо домена
     port: 8453, // Прямое подключение
     path: ''
   }));

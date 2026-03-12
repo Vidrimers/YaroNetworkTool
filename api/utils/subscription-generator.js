@@ -403,18 +403,18 @@ function generateHysteria2Link({
   port,
   obfs = null
 }) {
-  let serverAddr = `${serverIp}:${port}`;
-  
-  const params = new URLSearchParams({
-    auth: password
-  });
+  // Hysteria2 использует простой формат: hy2://password@server:port
+  let link = `hy2://${password}@${serverIp}:${port}`;
   
   if (obfs) {
+    const params = new URLSearchParams();
     params.append('obfs', obfs.type);
     params.append('obfs-password', obfs.password);
+    link += `?${params.toString()}`;
   }
   
-  return `hysteria2://${serverAddr}?${params.toString()}#${encodeURIComponent(name)}`;
+  link += `#${encodeURIComponent(name)}`;
+  return link;
 }
 
 /**
@@ -428,10 +428,8 @@ function generateNaiveProxyLink({
   port,
   path = '/'
 }) {
-  const auth = `${username}:${password}`;
-  const authBase64 = Buffer.from(auth).toString('base64');
-  
-  return `https://${authBase64}@${serverIp}:${port}${path}#${encodeURIComponent(name)}`;
+  // NaiveProxy использует формат: naive+https://username:password@server:port#name
+  return `naive+https://${username}:${password}@${serverIp}:${port}${path}#${encodeURIComponent(name)}`;
 }
 
 /**

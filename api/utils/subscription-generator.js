@@ -407,7 +407,10 @@ function generateHysteria2Link({
   // Если порт содержит диапазон, используем первый порт
   const singlePort = port.includes('-') ? port.split('-')[0] : port;
   
-  let link = `hysteria2://${password}@${serverIp}:${singlePort}`;
+  // URL-encode пароля для корректной обработки спецсимволов
+  const encodedPassword = encodeURIComponent(password);
+  
+  let link = `hysteria2://${encodedPassword}@${serverIp}:${singlePort}`;
   
   if (obfs) {
     const params = new URLSearchParams();

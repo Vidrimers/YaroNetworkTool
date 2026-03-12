@@ -257,14 +257,14 @@ export function generateSubscription({
 
   // === NAIVEPROXY (НОВЫЕ ПРОТОКОЛЫ) ===
   
-  // NaiveProxy через nginx
+  // NaiveProxy на основном сервере
   nodes.push(generateNaiveProxyLink({
     name: `${clientName} - NaiveProxy`,
     username: process.env.NAIVEPROXY_USERNAME || 'user1',
     password: process.env.NAIVEPROXY_PASSWORD || 'password123',
     serverIp: serverIp, // Используем домен
-    port: 443, // HTTPS через nginx
-    path: process.env.NAIVEPROXY_PATH || '/naive'
+    port: 8453, // Прямое подключение
+    path: ''
   }));
 
   // NaiveProxy через российский прокси

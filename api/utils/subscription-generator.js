@@ -232,12 +232,12 @@ export function generateSubscription({
   // Hysteria 2 на основном сервере
   nodes.push(generateHysteria2Link({
     name: `${clientName} - Hysteria2`,
-    password: 'admin_test_password_123', // Фиксированный пароль из конфига
+    password: process.env.HYSTERIA2_PASSWORD || 'admin_test_password_123',
     serverIp: serverIp, // Используем домен вместо IP
-    port: '25000', // Правильный порт
+    port: process.env.HYSTERIA2_PORT || '25000',
     obfs: {
       type: 'salamander',
-      password: 'cry_me_a_r1ver_2024'
+      password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
     }
   }));
 
@@ -245,12 +245,12 @@ export function generateSubscription({
   if (includeRussianProxy) {
     nodes.push(generateHysteria2Link({
       name: `${clientName} - RU Proxy - Hysteria2`,
-      password: 'admin_test_password_123', // Фиксированный пароль из конфига
+      password: process.env.HYSTERIA2_PASSWORD || 'admin_test_password_123',
       serverIp: 'lol.1xbetlineboom.xyz', // Российский поддомен
-      port: '25000', // Правильный порт
+      port: process.env.HYSTERIA2_PORT || '25000',
       obfs: {
         type: 'salamander',
-        password: 'cry_me_a_r1ver_2024'
+        password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
       }
     }));
   }
@@ -260,11 +260,11 @@ export function generateSubscription({
   // NaiveProxy через nginx
   nodes.push(generateNaiveProxyLink({
     name: `${clientName} - NaiveProxy`,
-    username: 'user1', // Фиксированный логин
-    password: 'password123', // Фиксированный пароль
+    username: process.env.NAIVEPROXY_USERNAME || 'user1',
+    password: process.env.NAIVEPROXY_PASSWORD || 'password123',
     serverIp: serverIp, // Используем домен
     port: 443, // HTTPS через nginx
-    path: '/naive' // Путь в nginx
+    path: process.env.NAIVEPROXY_PATH || '/naive'
   }));
 
   // NaiveProxy через российский прокси

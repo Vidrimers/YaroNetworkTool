@@ -232,12 +232,12 @@ export function generateSubscription({
   // Hysteria 2 на основном сервере
   nodes.push(generateHysteria2Link({
     name: `${clientName} - Hysteria2`,
-    password: generateHysteria2Password(uuid),
+    password: 'admin_test_password_123', // Фиксированный пароль из конфига
     serverIp: realityServerIp, // 89.124.70.156
-    port: process.env.HYSTERIA2_PORT || '25000', // Используем один порт
+    port: '25000', // Правильный порт
     obfs: {
       type: 'salamander',
-      password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
+      password: 'cry_me_a_r1ver_2024'
     }
   }));
 
@@ -245,39 +245,39 @@ export function generateSubscription({
   if (includeRussianProxy) {
     nodes.push(generateHysteria2Link({
       name: `${clientName} - RU Proxy - Hysteria2`,
-      password: generateHysteria2Password(uuid),
+      password: 'admin_test_password_123', // Фиксированный пароль из конфига
       serverIp: russianProxyIp, // 185.244.172.188
-      port: process.env.HYSTERIA2_PORT || '25000', // Используем один порт
+      port: '25000', // Правильный порт
       obfs: {
         type: 'salamander',
-        password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
+        password: 'cry_me_a_r1ver_2024'
       }
     }));
   }
 
   // === NAIVEPROXY (НОВЫЕ ПРОТОКОЛЫ) ===
   
-  // NaiveProxy через nginx
+  // NaiveProxy прямое подключение
   nodes.push(generateNaiveProxyLink({
     name: `${clientName} - NaiveProxy`,
-    username: uuid,
-    password: generateNaiveProxyPassword(uuid),
-    serverIp, // домен
-    port: 443,
-    path: process.env.NAIVEPROXY_PATH || '/naive'
+    username: 'user1', // Фиксированный логин
+    password: 'password123', // Фиксированный пароль
+    serverIp: realityServerIp, // 89.124.70.156
+    port: 8453, // Правильный порт
+    path: '' // Без пути
   }));
 
-  // NaiveProxy через российский прокси (если nginx настроен)
-  if (includeRussianProxy) {
-    nodes.push(generateNaiveProxyLink({
-      name: `${clientName} - RU Proxy - NaiveProxy`,
-      username: uuid,
-      password: generateNaiveProxyPassword(uuid),
-      serverIp: russianProxyIp,
-      port: 443,
-      path: process.env.NAIVEPROXY_PATH || '/naive'
-    }));
-  }
+  // NaiveProxy через российский прокси (пока отключаем)
+  // if (includeRussianProxy) {
+  //   nodes.push(generateNaiveProxyLink({
+  //     name: `${clientName} - RU Proxy - NaiveProxy`,
+  //     username: 'user1',
+  //     password: 'password123',
+  //     serverIp: russianProxyIp,
+  //     port: 8453,
+  //     path: ''
+  //   }));
+  // }
 
   return {
     version: 1,

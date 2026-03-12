@@ -261,9 +261,9 @@ export function generateSubscription({
   nodes.push(generateNaiveProxyLink({
     name: `${clientName} - NaiveProxy`,
     username: process.env.NAIVEPROXY_USERNAME || 'user1',
-    password: process.env.NAIVEPROXY_PASSWORD || 'password123',
-    serverIp: '89.124.70.156', // Используем IP вместо домена
-    port: 8453, // Прямое подключение
+    password: process.env.NAIVEPROXY_PASSWORD || 'UVAWZtQE0R5EeYsxx0ISg',
+    serverIp: '89.124.70.156',
+    port: 8453,
     path: ''
   }));
 
@@ -271,8 +271,8 @@ export function generateSubscription({
   if (includeRussianProxy) {
     nodes.push(generateNaiveProxyLink({
       name: `${clientName} - RU Proxy - NaiveProxy`,
-      username: 'user1',
-      password: 'password123',
+      username: process.env.NAIVEPROXY_USERNAME || 'user1',
+      password: process.env.NAIVEPROXY_PASSWORD || 'UVAWZtQE0R5EeYsxx0ISg',
       serverIp: russianProxyIp,
       port: 8453,
       path: ''

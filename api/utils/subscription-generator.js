@@ -233,7 +233,7 @@ export function generateSubscription({
   nodes.push(generateHysteria2Link({
     name: `${clientName} - Hysteria2`,
     password: 'admin_test_password_123', // Фиксированный пароль из конфига
-    serverIp: realityServerIp, // 89.124.70.156
+    serverIp: serverIp, // Используем домен вместо IP
     port: '25000', // Правильный порт
     obfs: {
       type: 'salamander',
@@ -257,14 +257,14 @@ export function generateSubscription({
 
   // === NAIVEPROXY (НОВЫЕ ПРОТОКОЛЫ) ===
   
-  // NaiveProxy прямое подключение
+  // NaiveProxy через nginx
   nodes.push(generateNaiveProxyLink({
     name: `${clientName} - NaiveProxy`,
     username: 'user1', // Фиксированный логин
     password: 'password123', // Фиксированный пароль
-    serverIp: realityServerIp, // 89.124.70.156
-    port: 8453, // Правильный порт
-    path: '' // Без пути
+    serverIp: serverIp, // Используем домен
+    port: 443, // HTTPS через nginx
+    path: '/naive' // Путь в nginx
   }));
 
   // NaiveProxy через российский прокси

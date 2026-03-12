@@ -246,7 +246,7 @@ export function generateSubscription({
     nodes.push(generateHysteria2Link({
       name: `${clientName} - RU Proxy - Hysteria2`,
       password: 'admin_test_password_123', // Фиксированный пароль из конфига
-      serverIp: russianProxyIp, // 185.244.172.188
+      serverIp: 'lol.1xbetlineboom.xyz', // Российский поддомен
       port: '25000', // Правильный порт
       obfs: {
         type: 'salamander',

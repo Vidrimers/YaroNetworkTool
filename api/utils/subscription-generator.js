@@ -227,6 +227,58 @@ export function generateSubscription({
     path: '/ws'
   }));
 
+  // === HYSTERIA 2 (НОВЫЕ ПРОТОКОЛЫ) ===
+  
+  // Hysteria 2 на основном сервере
+  nodes.push(generateHysteria2Link({
+    name: `${clientName} - Hysteria2`,
+    password: generateHysteria2Password(uuid),
+    serverIp: realityServerIp, // 89.124.70.156
+    port: process.env.HYSTERIA2_PORT_RANGE || '20000-30000',
+    obfs: {
+      type: 'salamander',
+      password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
+    }
+  }));
+
+  // Hysteria 2 через российский прокси
+  if (includeRussianProxy) {
+    nodes.push(generateHysteria2Link({
+      name: `${clientName} - RU Proxy - Hysteria2`,
+      password: generateHysteria2Password(uuid),
+      serverIp: russianProxyIp, // 185.244.172.188
+      port: process.env.HYSTERIA2_PORT_RANGE || '20000-30000',
+      obfs: {
+        type: 'salamander',
+        password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
+      }
+    }));
+  }
+
+  // === NAIVEPROXY (НОВЫЕ ПРОТОКОЛЫ) ===
+  
+  // NaiveProxy через nginx
+  nodes.push(generateNaiveProxyLink({
+    name: `${clientName} - NaiveProxy`,
+    username: uuid,
+    password: generateNaiveProxyPassword(uuid),
+    serverIp, // домен
+    port: 443,
+    path: process.env.NAIVEPROXY_PATH || '/naive'
+  }));
+
+  // NaiveProxy через российский прокси (если nginx настроен)
+  if (includeRussianProxy) {
+    nodes.push(generateNaiveProxyLink({
+      name: `${clientName} - RU Proxy - NaiveProxy`,
+      username: uuid,
+      password: generateNaiveProxyPassword(uuid),
+      serverIp: russianProxyIp,
+      port: 443,
+      path: process.env.NAIVEPROXY_PATH || '/naive'
+    }));
+  }
+
   return {
     version: 1,
     nodes: nodes
@@ -339,6 +391,63 @@ export function subscriptionToBase64(subscription) {
  */
 export function subscriptionToJSON(subscription) {
   return JSON.stringify(subscription, null, 2);
+}
+
+/**
+ * Генерирует Hysteria2 ссылку
+ */
+function generateHysteria2Link({
+  name,
+  password,
+  serverIp,
+  port,
+  obfs = null
+}) {
+  let serverAddr = `${serverIp}:${port}`;
+  
+  const params = new URLSearchParams({
+    auth: password
+  });
+  
+  if (obfs) {
+    params.append('obfs', obfs.type);
+    params.append('obfs-password', obfs.password);
+  }
+  
+  return `hysteria2://${serverAddr}?${params.toString()}#${encodeURIComponent(name)}`;
+}
+
+/**
+ * Генерирует NaiveProxy ссылку
+ */
+function generateNaiveProxyLink({
+  name,
+  username,
+  password,
+  serverIp,
+  port,
+  path = '/'
+}) {
+  const auth = `${username}:${password}`;
+  const authBase64 = Buffer.from(auth).toString('base64');
+  
+  return `https://${authBase64}@${serverIp}:${port}${path}#${encodeURIComponent(name)}`;
+}
+
+/**
+ * Генерирует пароль для Hysteria2 на основе UUID
+ */
+function generateHysteria2Password(uuid) {
+  // Используем первые 16 символов UUID + суффикс
+  return uuid.substring(0, 16) + '_hy2';
+}
+
+/**
+ * Генерирует пароль для NaiveProxy на основе UUID
+ */
+function generateNaiveProxyPassword(uuid) {
+  // Используем последние 16 символов UUID + суффикс
+  return uuid.substring(16) + '_naive';
 }
 
 export default {

@@ -247,7 +247,7 @@ export function generateSubscription({
       name: `${clientName} - RU Proxy - Hysteria2`,
       password: process.env.HYSTERIA2_PASSWORD || 'admin_test_password_123',
       serverIp: 'lol.1xbetlineboom.xyz', // Российский поддомен
-      port: process.env.HYSTERIA2_PORT || '25000',
+      port: '25001', // Отдельный порт для lol домена
       obfs: {
         type: 'salamander',
         password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'

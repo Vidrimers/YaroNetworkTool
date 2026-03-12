@@ -267,17 +267,17 @@ export function generateSubscription({
     path: '' // Без пути
   }));
 
-  // NaiveProxy через российский прокси (пока отключаем)
-  // if (includeRussianProxy) {
-  //   nodes.push(generateNaiveProxyLink({
-  //     name: `${clientName} - RU Proxy - NaiveProxy`,
-  //     username: 'user1',
-  //     password: 'password123',
-  //     serverIp: russianProxyIp,
-  //     port: 8453,
-  //     path: ''
-  //   }));
-  // }
+  // NaiveProxy через российский прокси
+  if (includeRussianProxy) {
+    nodes.push(generateNaiveProxyLink({
+      name: `${clientName} - RU Proxy - NaiveProxy`,
+      username: 'user1',
+      password: 'password123',
+      serverIp: russianProxyIp,
+      port: 8453,
+      path: ''
+    }));
+  }
 
   return {
     version: 1,

@@ -273,7 +273,7 @@ export function generateSubscription({
       name: `${clientName} - RU Proxy - NaiveProxy`,
       username: process.env.NAIVEPROXY_USERNAME || 'user1',
       password: process.env.NAIVEPROXY_PASSWORD || 'password123',
-      serverIp: russianProxyIp,
+      serverIp: 'lol.1xbetlineboom.xyz', // Используем поддомен с SSL
       port: 443,
       path: '/naive'
     }));

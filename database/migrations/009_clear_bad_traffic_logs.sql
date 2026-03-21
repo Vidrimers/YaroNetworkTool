@@ -6,5 +6,4 @@
 -- Удаляем все старые записи из traffic_logs
 DELETE FROM traffic_logs;
 
--- Удаляем снапшоты если таблица уже существует (начнём с чистого листа)
-DELETE FROM xray_stats_snapshot;
+-- Таблица xray_stats_snapshot создаётся автоматически при первом запуске коллектора

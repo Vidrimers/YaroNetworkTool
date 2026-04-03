@@ -162,5 +162,6 @@ scripts/setup-russian-proxy.sh
 scripts/setup-ssl-russian-proxy.sh
 scripts/setup-subdomain-ru.sh
 prompt.md
+planmt.md
 
 протокольчики

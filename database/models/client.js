@@ -93,7 +93,7 @@ class ClientModel {
       'subscription_days', 'subscription_end',
       'traffic_limit_gb', 'traffic_used_gb',
       'status', 'blocked_reason', 'warnings_count', 'last_warning_date',
-      'max_devices', 'custom_price_kaspa'
+      'max_devices', 'custom_price_kaspa', 'proxy_activated_at'
     ];
 
     const fields = [];

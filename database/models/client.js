@@ -384,27 +384,43 @@ class ClientModel {
       throw new Error('Client not found');
     }
 
-    const [day, week] = await Promise.all([
-      this.getTrafficForDays(uuid, 1),
-      this.getTrafficForDays(uuid, 7)
+    // Все периоды считаем с даты последнего сброса
+    const resetDate = new Date(client.traffic_reset_date);
+    const now = new Date();
+    
+    // Вычисляем даты для каждого периода
+    const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Используем максимум между датой сброса и расчетной датой
+    const dayStart = dayAgo > resetDate ? dayAgo : resetDate;
+    const weekStart = weekAgo > resetDate ? weekAgo : resetDate;
+
+    const [dayResult, weekResult, monthResult] = await Promise.all([
+      this.db.get(
+        `SELECT COALESCE(SUM(bytes_total), 0) as total_bytes
+         FROM traffic_logs 
+         WHERE client_uuid = ? AND created_at >= datetime(?)`,
+        [uuid, dayStart.toISOString()]
+      ),
+      this.db.get(
+        `SELECT COALESCE(SUM(bytes_total), 0) as total_bytes
+         FROM traffic_logs 
+         WHERE client_uuid = ? AND created_at >= datetime(?)`,
+        [uuid, weekStart.toISOString()]
+      ),
+      this.db.get(
+        `SELECT COALESCE(SUM(bytes_total), 0) as total_bytes
+         FROM traffic_logs 
+         WHERE client_uuid = ? AND created_at >= datetime(?)`,
+        [uuid, client.traffic_reset_date]
+      )
     ]);
 
-    // Для месяца считаем с даты последнего сброса
-    const monthResult = await this.db.get(
-      `SELECT 
-        COALESCE(SUM(bytes_total), 0) as total_bytes
-       FROM traffic_logs 
-       WHERE client_uuid = ? 
-       AND created_at >= datetime(?)`,
-      [uuid, client.traffic_reset_date]
-    );
-
-    const monthTrafficGb = (monthResult.total_bytes || 0) / (1024 ** 3);
-
     return {
-      day: day.traffic_gb,
-      week: week.traffic_gb,
-      month: monthTrafficGb
+      day: (dayResult.total_bytes || 0) / (1024 ** 3),
+      week: (weekResult.total_bytes || 0) / (1024 ** 3),
+      month: (monthResult.total_bytes || 0) / (1024 ** 3)
     };
   }
 

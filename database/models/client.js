@@ -91,7 +91,7 @@ class ClientModel {
     const allowedFields = [
       'name', 'telegram_id', 'email',
       'subscription_days', 'subscription_end',
-      'traffic_limit_gb', 'traffic_used_gb',
+      'traffic_limit_gb', 'traffic_used_gb', 'traffic_reset_date',
       'status', 'blocked_reason', 'warnings_count', 'last_warning_date',
       'max_devices', 'custom_price_kaspa', 'proxy_activated_at'
     ];

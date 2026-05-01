@@ -129,6 +129,7 @@ tutorial/
 
 # Планы и заметки (личные)
 план.txt
+ipv6setup.txt
 
 # ============================================================================
 # Второй репозиторий (Telegram бот)
@@ -163,5 +164,6 @@ scripts/setup-ssl-russian-proxy.sh
 scripts/setup-subdomain-ru.sh
 prompt.md
 planmt.md
+вывод
 
 протокольчики

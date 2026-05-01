@@ -379,16 +379,32 @@ class ClientModel {
    * Получить статистику трафика (день/неделя/месяц)
    */
   async getTrafficStats(uuid) {
-    const [day, week, month] = await Promise.all([
+    const client = await this.getByUuid(uuid);
+    if (!client) {
+      throw new Error('Client not found');
+    }
+
+    const [day, week] = await Promise.all([
       this.getTrafficForDays(uuid, 1),
-      this.getTrafficForDays(uuid, 7),
-      this.getTrafficForDays(uuid, 30)
+      this.getTrafficForDays(uuid, 7)
     ]);
+
+    // Для месяца считаем с даты последнего сброса
+    const monthResult = await this.db.get(
+      `SELECT 
+        COALESCE(SUM(bytes_total), 0) as total_bytes
+       FROM traffic_logs 
+       WHERE client_uuid = ? 
+       AND created_at >= datetime(?)`,
+      [uuid, client.traffic_reset_date]
+    );
+
+    const monthTrafficGb = (monthResult.total_bytes || 0) / (1024 ** 3);
 
     return {
       day: day.traffic_gb,
       week: week.traffic_gb,
-      month: month.traffic_gb
+      month: monthTrafficGb
     };
   }
 

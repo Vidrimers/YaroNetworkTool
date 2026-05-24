@@ -192,16 +192,16 @@ export function generateSubscription({
     }));
   }
 
-  // 12. Shadowsocks 2022 + WebSocket (8450) - обфускация
+  // 12. Shadowsocks 2022 + WebSocket через nginx TLS (443) - обфускация
   if (ss2022Password) {
     nodes.push(generateShadowsocksLink({
       name: `${clientName} - SS2022 WS`,
       password: ss2022Password,
       serverIp,
-      port: 8450,
+      port: 443,
       method: '2022-blake3-aes-128-gcm',
       plugin: 'v2ray-plugin',
-      pluginOpts: 'path=/ss-ws'
+      pluginOpts: 'tls;host=' + serverIp + ';path=/ss-ws'
     }));
   }
 
@@ -241,43 +241,47 @@ export function generateSubscription({
     }
   }));
 
-  // Hysteria 2 через российский прокси
+  // Hysteria 2 через российский прокси (отключён — нет проброса UDP на RU прокси)
+  // TODO: Настроить Hysteria2 на RU прокси или UDP проброс
+  /*
   if (includeRussianProxy) {
     nodes.push(generateHysteria2Link({
       name: `${clientName} - RU Proxy - Hysteria2`,
       password: process.env.HYSTERIA2_PASSWORD || 'admin_test_password_123',
-      serverIp: 'lol.1xbetlineboom.xyz', // Российский поддомен
-      port: '25001', // Отдельный порт для lol домена
+      serverIp: 'lol.1xbetlineboom.xyz',
+      port: '25001',
       obfs: {
         type: 'salamander',
         password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
       }
     }));
   }
+  */
 
   // === NAIVEPROXY (НОВЫЕ ПРОТОКОЛЫ) ===
   
-  // NaiveProxy на основном сервере через nginx
+  // NaiveProxy на основном сервере (caddy напрямую на порту 8453)
   nodes.push(generateNaiveProxyLink({
     name: `${clientName} - NaiveProxy`,
     username: process.env.NAIVEPROXY_USERNAME || 'user1',
     password: process.env.NAIVEPROXY_PASSWORD || 'password123',
     serverIp: serverIp, // Используем домен для совпадения с сертификатом
-    port: 443,
-    path: '/naive'
+    port: 8453
   }));
 
-  // NaiveProxy через российский прокси
+  // NaiveProxy через российский прокси (пока отключён — нет проброса на RU прокси)
+  // TODO: Настроить проброс порта 8453 на RU прокси если нужно
+  /*
   if (includeRussianProxy) {
     nodes.push(generateNaiveProxyLink({
       name: `${clientName} - RU Proxy - NaiveProxy`,
       username: process.env.NAIVEPROXY_USERNAME || 'user1',
       password: process.env.NAIVEPROXY_PASSWORD || 'password123',
-      serverIp: 'lol.1xbetlineboom.xyz', // Используем поддомен с SSL
-      port: 443,
-      path: '/naive'
+      serverIp: 'lol.1xbetlineboom.xyz',
+      port: 8453
     }));
   }
+  */
 
   return {
     version: 1,
@@ -431,11 +435,10 @@ function generateNaiveProxyLink({
   username,
   password,
   serverIp,
-  port,
-  path = '/'
+  port
 }) {
-  // NaiveProxy использует стандартный формат: https://username:password@server:port/path#name
-  return `https://${username}:${password}@${serverIp}:${port}${path}#${encodeURIComponent(name)}`;
+  // NaiveProxy использует формат: naive+https://username:password@server:port#name
+  return `naive+https://${username}:${password}@${serverIp}:${port}#${encodeURIComponent(name)}`;
 }
 
 /**

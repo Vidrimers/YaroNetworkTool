@@ -192,7 +192,11 @@ export function generateSubscription({
     }));
   }
 
-  // 12. Shadowsocks 2022 + WebSocket через nginx TLS (443) - обфускация
+  // 12. Shadowsocks 2022 + WebSocket через nginx TLS (443)
+  // ПРИМЕЧАНИЕ: SS2022+WS через xray использует нестандартный формат ссылки
+  // Большинство клиентов (Throne, Hiddify) не поддерживают v2ray-plugin в SS ссылках
+  // Используйте VLESS WS TLS 443 вместо этого — тот же эффект
+  /*
   if (ss2022Password) {
     nodes.push(generateShadowsocksLink({
       name: `${clientName} - SS2022 WS`,
@@ -204,6 +208,7 @@ export function generateSubscription({
       pluginOpts: 'tls;host=' + serverIp + ';path=/ss-ws'
     }));
   }
+  */
 
   // 13. Shadowsocks 2022 через российский прокси (8448)
   if (ss2022Password && includeRussianProxy) {
@@ -258,16 +263,20 @@ export function generateSubscription({
   }
   */
 
-  // === NAIVEPROXY (НОВЫЕ ПРОТОКОЛЫ) ===
-  
+  // === NAIVEPROXY ===
   // NaiveProxy на основном сервере (caddy напрямую на порту 8453)
+  // ПРИМЕЧАНИЕ: NaiveProxy поддерживается только в NekoBox и нативном клиенте naive
+  // Throne и Hiddify НЕ поддерживают NaiveProxy
+  // Раскомментировать если клиент поддерживает:
+  /*
   nodes.push(generateNaiveProxyLink({
     name: `${clientName} - NaiveProxy`,
     username: process.env.NAIVEPROXY_USERNAME || 'user1',
     password: process.env.NAIVEPROXY_PASSWORD || 'password123',
-    serverIp: serverIp, // Используем домен для совпадения с сертификатом
+    serverIp: serverIp,
     port: 8453
   }));
+  */
 
   // NaiveProxy через российский прокси (пока отключён — нет проброса на RU прокси)
   // TODO: Настроить проброс порта 8453 на RU прокси если нужно
@@ -353,7 +362,7 @@ function generateTrojanLink({
 }
 
 /**
- * Генерирует Shadowsocks ссылку
+ * Генерирует Shadowsocks ссылку (SIP002 формат)
  */
 function generateShadowsocksLink({
   name,
@@ -364,17 +373,19 @@ function generateShadowsocksLink({
   plugin = '',
   pluginOpts = ''
 }) {
-  // Формат: ss://method:password@server:port#name
+  // SIP002 формат: ss://BASE64(method:password)@server:port/?plugin=encoded#name
   const userInfo = `${method}:${password}`;
-  const userInfoBase64 = Buffer.from(userInfo).toString('base64');
+  const userInfoBase64 = Buffer.from(userInfo).toString('base64').replace(/=+$/, '');
   
   let link = `ss://${userInfoBase64}@${serverIp}:${port}`;
   
-  // Добавляем параметры плагина если есть
+  // Добавляем параметры плагина если есть (SIP002 формат)
   if (plugin) {
+    // Формат: plugin=pluginName%3BpluginOpts (разделитель ; URL-encoded как %3B)
+    const pluginValue = plugin + ';' + pluginOpts;
     const params = new URLSearchParams();
-    params.append('plugin', `${plugin};${pluginOpts}`);
-    link += `?${params.toString()}`;
+    params.append('plugin', pluginValue);
+    link += `/?${params.toString()}`;
   }
   
   link += `#${encodeURIComponent(name)}`;

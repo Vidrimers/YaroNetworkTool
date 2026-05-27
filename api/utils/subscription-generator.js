@@ -20,7 +20,7 @@ export function generateSubscription({
   serverIp,
   publicKey,
   shortId,
-  sni = 'www.microsoft.com',
+  sni = 'www.amd.com',
   ss2022Password,
   clientName = 'MyVPN',
   includeRussianProxy = true
@@ -32,6 +32,20 @@ export function generateSubscription({
   
   // Российский прокси-сервер
   const russianProxyIp = '185.244.172.188';
+
+  // Параметры обфускации XHTTP (маскировка под REST API)
+  const xhttpExtra = {
+    seqKey: 'offset',
+    seqPlacement: 'cookie',
+    sessionKey: 'X-Request-ID',
+    sessionPlacement: 'header',
+    uplinkHTTPMethod: 'PUT',
+    xPaddingBytes: '100-1000',
+    xPaddingKey: '_ga',
+    xPaddingMethod: 'tokenish',
+    xPaddingObfsMode: true,
+    xPaddingPlacement: 'cookie'
+  };
   
   // === ПРЯМОЕ ПОДКЛЮЧЕНИЕ (vdsina) ===
   
@@ -46,7 +60,9 @@ export function generateSubscription({
     publicKey,
     shortId,
     sni,
-    flow: ''
+    flow: '',
+    path: '/api/v1/documents',
+    xhttpExtra
   }));
 
   // 2. VLESS Reality TCP (8444)
@@ -106,7 +122,9 @@ export function generateSubscription({
       publicKey,
       shortId,
       sni,
-      flow: ''
+      flow: '',
+      path: '/api/v1/documents',
+      xhttpExtra
     }));
 
     // 6. VLESS Reality TCP через российский прокси (8444)
@@ -314,7 +332,8 @@ function generateVlessLink({
   flow = '',
   path = '',
   host = '',
-  serviceName = ''
+  serviceName = '',
+  xhttpExtra = null
 }) {
   const params = new URLSearchParams({
     encryption: 'none',
@@ -332,7 +351,12 @@ function generateVlessLink({
   
   // Fingerprint для Reality
   if (security === 'reality') {
-    params.append('fp', 'chrome');
+    params.append('fp', 'qq');
+  }
+
+  // Параметры XHTTP обфускации
+  if (network === 'xhttp' && xhttpExtra) {
+    params.append('extra', JSON.stringify(xhttpExtra));
   }
 
   return `vless://${uuid}@${serverIp}:${port}?${params.toString()}#${encodeURIComponent(name)}`;

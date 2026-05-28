@@ -57,67 +57,78 @@ class XrayConfigManager {
   }
 
   addClient(uuid, email = '') {
+    const config = this.readConfig();
+    
+    if (!config.inbounds || config.inbounds.length === 0) {
+      throw new Error('No inbounds found in X-Ray config');
+    }
+
+    // Проверяем, нужно ли вообще что-то менять
+    let needsUpdate = false;
+
+    // Добавляем клиента во все inbound'ы
+    for (let i = 0; i < config.inbounds.length; i++) {
+      const inbound = config.inbounds[i];
+      const protocol = inbound.protocol;
+      
+      if (!inbound.settings) {
+        inbound.settings = {};
+      }
+      
+      if (!inbound.settings.clients) {
+        inbound.settings.clients = [];
+      }
+      
+      const clients = inbound.settings.clients;
+      
+      // Проверяем, существует ли клиент
+      const existingClient = clients.find(c => {
+        if (protocol === 'trojan') {
+          return c.password === uuid;
+        } else {
+          return c.id === uuid;
+        }
+      });
+      
+      if (existingClient) {
+        console.log(`Client ${uuid} already exists in inbound ${i} (${protocol})`);
+        continue;
+      }
+      
+      // Добавляем клиента в зависимости от протокола
+      if (protocol === 'vless') {
+        // Проверяем, нужен ли flow для Vision (порт 8446)
+        const isVision = inbound.port === 8446;
+        clients.push({
+          id: uuid,
+          flow: isVision ? 'xtls-rprx-vision' : '',
+          email: email || uuid.substring(0, 8)
+        });
+        needsUpdate = true;
+      } else if (protocol === 'trojan') {
+        clients.push({
+          password: uuid,
+          email: email || uuid.substring(0, 8)
+        });
+        needsUpdate = true;
+      } else if (protocol === 'shadowsocks') {
+        // SS2022 использует один пароль для всех, не добавляем клиентов
+        console.log(`Skipping shadowsocks inbound (uses shared password)`);
+        continue;
+      }
+      
+      config.inbounds[i].settings.clients = clients;
+    }
+
+    // Если клиент уже есть во всех inbound'ах — не перезаписываем конфиг и не перезапускаем Xray
+    if (!needsUpdate) {
+      console.log(`Client ${uuid} already exists in all inbounds, skipping restart`);
+      return true;
+    }
+    
     const backupPath = this.createBackup();
     
     try {
-      const config = this.readConfig();
-      
-      if (!config.inbounds || config.inbounds.length === 0) {
-        throw new Error('No inbounds found in X-Ray config');
-      }
-
-      // Добавляем клиента во все inbound'ы
-      for (let i = 0; i < config.inbounds.length; i++) {
-        const inbound = config.inbounds[i];
-        const protocol = inbound.protocol;
-        
-        if (!inbound.settings) {
-          inbound.settings = {};
-        }
-        
-        if (!inbound.settings.clients) {
-          inbound.settings.clients = [];
-        }
-        
-        const clients = inbound.settings.clients;
-        
-        // Проверяем, существует ли клиент
-        const existingClient = clients.find(c => {
-          if (protocol === 'trojan') {
-            return c.password === uuid;
-          } else {
-            return c.id === uuid;
-          }
-        });
-        
-        if (existingClient) {
-          console.log(`Client ${uuid} already exists in inbound ${i} (${protocol})`);
-          continue;
-        }
-        
-        // Добавляем клиента в зависимости от протокола
-        if (protocol === 'vless') {
-          // Проверяем, нужен ли flow для Vision (порт 8446)
-          const isVision = inbound.port === 8446;
-          clients.push({
-            id: uuid,
-            flow: isVision ? 'xtls-rprx-vision' : '',
-            email: email || uuid.substring(0, 8)
-          });
-        } else if (protocol === 'trojan') {
-          clients.push({
-            password: uuid,
-            email: email || uuid.substring(0, 8)
-          });
-        } else if (protocol === 'shadowsocks') {
-          // SS2022 использует один пароль для всех, не добавляем клиентов
-          console.log(`Skipping shadowsocks inbound (uses shared password)`);
-          continue;
-        }
-        
-        config.inbounds[i].settings.clients = clients;
-      }
-      
       this.writeConfig(config);
       
       if (!this.validateConfig()) {

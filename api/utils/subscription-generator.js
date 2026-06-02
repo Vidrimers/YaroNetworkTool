@@ -35,16 +35,7 @@ export function generateSubscription({
 
   // Параметры обфускации XHTTP (маскировка под REST API)
   const xhttpExtra = {
-    seqKey: 'offset',
-    seqPlacement: 'cookie',
-    sessionKey: 'X-Request-ID',
-    sessionPlacement: 'header',
-    uplinkHTTPMethod: 'PUT',
-    xPaddingBytes: '100-1000',
-    xPaddingKey: '_ga',
-    xPaddingMethod: 'tokenish',
-    xPaddingObfsMode: true,
-    xPaddingPlacement: 'cookie'
+    xPaddingBytes: '100-1000'
   };
   
   // === ПРЯМОЕ ПОДКЛЮЧЕНИЕ (vdsina) ===

@@ -108,6 +108,20 @@ export function generateSubscription({
     flow: 'xtls-rprx-vision'
   }));
 
+  // 4.1. VLESS Reality Vision (443) - через SNI-routing, более надёжный порт
+  nodes.push(generateVlessLink({
+    name: `${clientName} - Reality Vision 443`,
+    uuid,
+    serverIp: realityServerIp,
+    port: 443,
+    network: 'tcp',
+    security: 'reality',
+    publicKey,
+    shortId,
+    sni,
+    flow: 'xtls-rprx-vision'
+  }));
+
   // === РОССИЙСКИЙ ПРОКСИ (для обхода блокировок) ===
   
   if (includeRussianProxy) {

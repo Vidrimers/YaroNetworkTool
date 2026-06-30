@@ -109,6 +109,7 @@ $RECYCLE.BIN/
 # Временные файлы проекта
 temp/
 tmp/
+tasks/
 upload.md
 serverjs.md
 replacements.txt

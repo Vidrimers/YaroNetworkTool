@@ -7,7 +7,18 @@ import { promisify } from 'util';
 
 class TrafficLogModel {
   constructor(dbPath) {
-    this.db = new sqlite3.Database(dbPath);
+    this.db = new sqlite3.Database(dbPath, (err) => {
+      if (err) {
+        console.error('Ошибка открытия БД:', err.message);
+        return;
+      }
+      this.db.run('PRAGMA journal_mode=WAL', (err) => {
+        if (err) console.error('Ошибка включения WAL:', err.message);
+      });
+      this.db.run('PRAGMA busy_timeout=5000', (err) => {
+        if (err) console.error('Ошибка установки busy_timeout:', err.message);
+      });
+    });
     this.db.run = promisify(this.db.run.bind(this.db));
     this.db.get = promisify(this.db.get.bind(this.db));
     this.db.all = promisify(this.db.all.bind(this.db));

@@ -18,10 +18,10 @@ const VPN_PORTS = [
   { port: 8449, name: 'VLESS WS' },
 ];
 
-// SNI для проверки фильтрации
+// SNI для проверки фильтрации (порт важен — nginx слушает SSL на 2053, Reality на 8443)
 const SNI_TESTS = [
-  { sni: '1xbetlineboom.xyz', name: 'YaroVPN' },
-  { sni: 'www.microsoft.com', name: 'Microsoft (Reality)' },
+  { sni: '1xbetlineboom.xyz', name: 'YaroVPN', port: 2053 },
+  { sni: 'www.microsoft.com', name: 'Microsoft (Reality)', port: 8443 },
 ];
 
 /**
@@ -87,10 +87,10 @@ export async function checkPorts(ip, ports = VPN_PORTS) {
 /**
  * Проверить SNI-фильтрацию через openssl
  */
-export async function checkSNI(ip, sni) {
+export async function checkSNI(ip, sni, port = 443) {
   try {
     const { stdout, stderr } = await execAsync(
-      `timeout 5 openssl s_client -connect ${ip}:443 -servername ${sni} -tlsextdebug 2>&1`,
+      `timeout 5 openssl s_client -connect ${ip}:${port} -servername ${sni} -tlsextdebug 2>&1`,
       { timeout: 8000 }
     );
     const output = stdout + stderr;
@@ -112,8 +112,8 @@ export async function checkSNI(ip, sni) {
  */
 export async function checkSNIList(ip, sniList = SNI_TESTS) {
   const results = {};
-  const checks = sniList.map(async ({ sni, name }) => {
-    const result = await checkSNI(ip, sni);
+  const checks = sniList.map(async ({ sni, name, port }) => {
+    const result = await checkSNI(ip, sni, port);
     results[sni] = { ...result, name };
   });
   await Promise.allSettled(checks);

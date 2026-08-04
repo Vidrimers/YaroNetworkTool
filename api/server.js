@@ -69,6 +69,7 @@ import clientsRouter from './routes/clients.js';
 import statsRouter from './routes/stats.js';
 import extensionRequestsRouter from './routes/extension-requests.js';
 import subscriptionRouter from './routes/subscription.js';
+import tspuRouter from './routes/tspu.js';
 import { requireApiKey } from './middleware/auth.js';
 
 // Защита всех /api/* маршрутов по API ключу
@@ -77,6 +78,7 @@ app.use('/api', requireApiKey);
 app.use('/api/clients', clientsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/extension-requests', extensionRequestsRouter);
+app.use('/api/tspu', tspuRouter);
 app.use('/subscription', subscriptionRouter);
 
 // 404 handler

@@ -89,8 +89,9 @@ export async function checkPorts(ip, ports = VPN_PORTS) {
  */
 export async function checkSNI(ip, sni, port = 443) {
   try {
+    // stdin → /dev/null чтобы openssl завершился после handshake
     const { stdout, stderr } = await execAsync(
-      `timeout 5 openssl s_client -connect ${ip}:${port} -servername ${sni} -tlsextdebug 2>&1`,
+      `timeout 5 openssl s_client -connect ${ip}:${port} -servername ${sni} -tlsextdebug < /dev/null 2>&1`,
       { timeout: 8000 }
     );
     const output = stdout + stderr;
@@ -102,7 +103,13 @@ export async function checkSNI(ip, sni, port = 443) {
       return { pass: false, cert: null, error: 'RST — SNI заблокирован' };
     }
     return { pass: false, cert: null, error: 'Нет ответа' };
-  } catch {
+  } catch (err) {
+    // timeout exit code 124 — но stdout может уже содержать сертификат
+    const output = (err.stdout || '') + (err.stderr || '');
+    if (output.includes('BEGIN CERTIFICATE')) {
+      const certMatch = output.match(/issuer=([^\n]+)/);
+      return { pass: true, cert: certMatch ? certMatch[1].trim() : 'OK' };
+    }
     return { pass: false, cert: null, error: 'Таймаут' };
   }
 }

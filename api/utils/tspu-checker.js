@@ -9,14 +9,13 @@ import net from 'net';
 
 const execAsync = promisify(exec);
 
-// Порты VPN-сервера для проверки
+// Порты VPN-сервера для проверки (только TCP — Hysteria использует UDP)
 const VPN_PORTS = [
   { port: 443, name: 'HTTPS' },
   { port: 8443, name: 'Reality XHTTP' },
   { port: 8444, name: 'Reality TCP' },
   { port: 8448, name: 'SS2022' },
   { port: 8449, name: 'VLESS WS' },
-  { port: 25000, name: 'Hysteria2' },
 ];
 
 // SNI для проверки фильтрации

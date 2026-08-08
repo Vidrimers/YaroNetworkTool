@@ -71,15 +71,30 @@ import extensionRequestsRouter from './routes/extension-requests.js';
 import subscriptionRouter from './routes/subscription.js';
 import tspuRouter from './routes/tspu.js';
 import { requireApiKey } from './middleware/auth.js';
+import { rateLimit } from './middleware/rate-limit.js';
 
-// Защита всех /api/* маршрутов по API ключу
-app.use('/api', requireApiKey);
+// Rate limiting для публичного subscription endpoint (защита от перебора UUID)
+const subscriptionRateLimit = rateLimit({
+  windowMs: 60000,   // 1 минута
+  max: 30,           // 30 запросов в минуту с одного IP
+  keyPrefix: 'sub'
+});
+
+// Rate limiting для защищённых API endpoints
+const apiRateLimit = rateLimit({
+  windowMs: 60000,   // 1 минута
+  max: 120,          // 120 запросов в минуту (бот + веб-панель)
+  keyPrefix: 'api'
+});
+
+// Защита всех /api/* маршрутов по API ключу + rate limit
+app.use('/api', apiRateLimit, requireApiKey);
 
 app.use('/api/clients', clientsRouter);
 app.use('/api/stats', statsRouter);
 app.use('/api/extension-requests', extensionRequestsRouter);
 app.use('/api/tspu', tspuRouter);
-app.use('/subscription', subscriptionRouter);
+app.use('/subscription', subscriptionRateLimit, subscriptionRouter);
 
 // 404 handler
 app.use((req, res) => {

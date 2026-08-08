@@ -186,6 +186,29 @@ router.post('/:id/approve', async (req, res, next) => {
     const days = request.approved_days || request.requested_days;
     await clientModel.extendSubscription(request.client_uuid, days);
 
+    // Send Telegram notification to user
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (TELEGRAM_BOT_TOKEN && request.telegram_id) {
+      try {
+        const client = await clientModel.getByUuid(request.client_uuid);
+        const message = `✅ <b>Твой запрос одобрен!</b>\n\n` +
+          `📅 Продление: ${days} дней\n` +
+          `👤 Клиент: ${client?.name || 'Неизвестный'}`;
+        
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: request.telegram_id,
+            text: message,
+            parse_mode: 'HTML'
+          })
+        });
+      } catch (tgErr) {
+        console.error('[Extension Request] Telegram notification to user failed:', tgErr.message);
+      }
+    }
+
     res.json({
       success: true,
       message: 'Request approved and subscription extended',
@@ -212,6 +235,29 @@ router.post('/:id/deny', async (req, res, next) => {
     }
 
     const request = await extensionRequestModel.deny(id, admin_telegram_id, reason);
+
+    // Send Telegram notification to user
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (TELEGRAM_BOT_TOKEN && request.telegram_id) {
+      try {
+        const client = await clientModel.getByUuid(request.client_uuid);
+        const message = `❌ <b>Твой запрос отклонён</b>\n\n` +
+          `📝 Причина: ${reason || 'Не указана'}\n` +
+          `👤 Клиент: ${client?.name || 'Неизвестный'}`;
+        
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: request.telegram_id,
+            text: message,
+            parse_mode: 'HTML'
+          })
+        });
+      } catch (tgErr) {
+        console.error('[Extension Request] Telegram notification to user failed:', tgErr.message);
+      }
+    }
 
     res.json({
       success: true,

@@ -61,6 +61,33 @@ router.post('/create', async (req, res, next) => {
       requested_months
     });
 
+    // Send Telegram notification to admin
+    const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+    
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_ID) {
+      try {
+        const days = requested_months * 30;
+        const message = `🔔 <b>Новый запрос на продление</b>\n\n` +
+          `👤 Клиент: ${client.name}\n` +
+          `🆔 UUID: <code>${client_uuid}</code>\n` +
+          `📅 Запрошено: ${requested_months} мес. (${days} дней)\n` +
+          `🌐 Источник: Веб-панель`;
+        
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_ADMIN_ID,
+            text: message,
+            parse_mode: 'HTML'
+          })
+        });
+      } catch (tgErr) {
+        console.error('[Extension Request] Telegram notification failed:', tgErr.message);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Extension request created successfully',

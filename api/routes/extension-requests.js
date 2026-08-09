@@ -61,7 +61,7 @@ router.post('/create', async (req, res, next) => {
       requested_months
     });
 
-    // Send Telegram notification to admin
+    // Send Telegram notification to admin with inline buttons
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
     
@@ -71,8 +71,21 @@ router.post('/create', async (req, res, next) => {
         const message = `🔔 <b>Новый запрос на продление</b>\n\n` +
           `👤 Клиент: ${client.name}\n` +
           `🆔 UUID: <code>${client_uuid}</code>\n` +
-          `📅 Запрошено: ${requested_months} мес. (${days} дней)\n` +
-          `🌐 Источник: Веб-панель`;
+          `📅 Запрошено: ${requested_months} ${requested_months === 1 ? 'месяц' : 'месяцев'} (${days} дней)\n` +
+          `🌐 Источник: Веб-панель\n\n` +
+          `Выбери действие:`;
+        
+        const replyMarkup = {
+          inline_keyboard: [
+            [
+              { text: '✅ Разрешить', callback_data: `approve_${request.id}_${requested_months}` },
+              { text: '❌ Отказать', callback_data: `deny_${request.id}` }
+            ],
+            [
+              { text: '📝 Другой период', callback_data: `change_req_${request.id}` }
+            ]
+          ]
+        };
         
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST',
@@ -80,7 +93,8 @@ router.post('/create', async (req, res, next) => {
           body: JSON.stringify({
             chat_id: TELEGRAM_ADMIN_ID,
             text: message,
-            parse_mode: 'HTML'
+            parse_mode: 'HTML',
+            reply_markup: replyMarkup
           })
         });
       } catch (tgErr) {

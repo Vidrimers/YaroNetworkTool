@@ -230,9 +230,5 @@ router.get('/devices', async (req, res, next) => {
     next(error);
   }
 });
-  } catch (error) {
-    next(error);
-  }
-});
 
 export default router;

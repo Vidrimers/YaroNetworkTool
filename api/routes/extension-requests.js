@@ -188,6 +188,9 @@ router.post('/:id/approve', async (req, res, next) => {
 
     // Send Telegram notification to user
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    const TELEGRAM_ADMIN_ID = process.env.TELEGRAM_ADMIN_ID;
+    console.log('[Extension Request] Telegram config:', { hasToken: !!TELEGRAM_BOT_TOKEN, telegramId: request.telegram_id });
+    
     if (TELEGRAM_BOT_TOKEN && request.telegram_id) {
       try {
         const client = await clientModel.getByUuid(request.client_uuid);
@@ -195,7 +198,7 @@ router.post('/:id/approve', async (req, res, next) => {
           `📅 Продление: ${days} дней\n` +
           `👤 Клиент: ${client?.name || 'Неизвестный'}`;
         
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -204,9 +207,13 @@ router.post('/:id/approve', async (req, res, next) => {
             parse_mode: 'HTML'
           })
         });
+        const result = await resp.json();
+        console.log('[Extension Request] Telegram notification result:', result);
       } catch (tgErr) {
         console.error('[Extension Request] Telegram notification to user failed:', tgErr.message);
       }
+    } else {
+      console.log('[Extension Request] Skipping Telegram notification - missing token or telegram_id');
     }
 
     res.json({
@@ -238,6 +245,8 @@ router.post('/:id/deny', async (req, res, next) => {
 
     // Send Telegram notification to user
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    console.log('[Extension Request] Deny - Telegram config:', { hasToken: !!TELEGRAM_BOT_TOKEN, telegramId: request.telegram_id });
+    
     if (TELEGRAM_BOT_TOKEN && request.telegram_id) {
       try {
         const client = await clientModel.getByUuid(request.client_uuid);
@@ -245,7 +254,7 @@ router.post('/:id/deny', async (req, res, next) => {
           `📝 Причина: ${reason || 'Не указана'}\n` +
           `👤 Клиент: ${client?.name || 'Неизвестный'}`;
         
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -254,9 +263,13 @@ router.post('/:id/deny', async (req, res, next) => {
             parse_mode: 'HTML'
           })
         });
+        const result = await resp.json();
+        console.log('[Extension Request] Deny - Telegram notification result:', result);
       } catch (tgErr) {
         console.error('[Extension Request] Telegram notification to user failed:', tgErr.message);
       }
+    } else {
+      console.log('[Extension Request] Skipping Telegram notification - missing token or telegram_id');
     }
 
     res.json({

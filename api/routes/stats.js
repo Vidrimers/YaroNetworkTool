@@ -162,4 +162,77 @@ router.get('/top', async (req, res, next) => {
   }
 });
 
+/**
+ * GET /stats/devices - Получить количество активных устройств для каждого клиента
+ */
+router.get('/devices', async (req, res, next) => {
+  try {
+    const XRAY_LOG_PATH = process.env.XRAY_LOG_PATH || '/var/log/xray/access.log';
+    const ACTIVE_WINDOW_MINUTES = 5;
+    
+    // Получаем всех клиентов
+    const clients = await clientModel.getAll();
+    const nameToUuid = new Map();
+    clients.forEach(c => nameToUuid.set(c.name, c.uuid));
+    
+    // Читаем логи X-Ray
+    const { exec } = await import('child_process');
+    const { promisify } = await import('util');
+    const execAsync = promisify(exec);
+    
+    let stdout = '';
+    try {
+      const result = await execAsync(`tail -n 1000 ${XRAY_LOG_PATH}`);
+      stdout = result.stdout;
+    } catch (err) {
+      return res.json({ success: true, devices: {} });
+    }
+    
+    const now = Date.now();
+    const activeWindowMs = ACTIVE_WINDOW_MINUTES * 60 * 1000;
+    const devicesByClient = new Map();
+    
+    // Парсим логи
+    const lines = stdout.split('\n');
+    for (const line of lines) {
+      if (!line.includes('accepted')) continue;
+      
+      const nameMatch = line.match(/email:\s*(.+?)$/);
+      if (!nameMatch) continue;
+      
+      const clientName = nameMatch[1].trim();
+      const uuid = nameToUuid.get(clientName);
+      if (!uuid) continue;
+      
+      const ipMatch = line.match(/from\s+(\d+\.\d+\.\d+\.\d+)/);
+      if (!ipMatch) continue;
+      
+      const timeMatch = line.match(/^(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2})/);
+      if (!timeMatch) continue;
+      
+      const timestamp = new Date(timeMatch[1].replace(/\//g, '-')).getTime();
+      if (now - timestamp > activeWindowMs) continue;
+      
+      if (!devicesByClient.has(uuid)) {
+        devicesByClient.set(uuid, new Set());
+      }
+      devicesByClient.get(uuid).add(ipMatch[1]);
+    }
+    
+    // Формируем ответ
+    const devices = {};
+    for (const [uuid, ips] of devicesByClient) {
+      devices[uuid] = { count: ips.size, ips: Array.from(ips) };
+    }
+    
+    res.json({ success: true, devices });
+  } catch (error) {
+    next(error);
+  }
+});
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

@@ -264,9 +264,9 @@ router.post('/:id/deny', async (req, res, next) => {
     if (TELEGRAM_BOT_TOKEN && request.telegram_id) {
       try {
         const client = await clientModel.getByUuid(request.client_uuid);
-        const message = `❌ <b>Твой запрос отклонён</b>\n\n` +
-          `📝 Причина: ${reason || 'Не указана'}\n` +
-          `👤 Клиент: ${client?.name || 'Неизвестный'}`;
+        const message = reason
+          ? `❌ <b>Твой запрос отклонён</b>\n\n📝 Причина: ${reason}`
+          : `❌ <b>Твой запрос отклонён</b>\n\nК сожалению, администратор отклонил твой запрос на продление.\nДля уточнения причины обратись к администратору.`;
         
         const resp = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST',

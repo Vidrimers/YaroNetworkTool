@@ -33,6 +33,12 @@ export function generateSubscription({
   // Российский прокси-сервер
   const russianProxyIp = '185.244.172.188';
 
+  // Whitelist-сервер (для обхода белых списков операторов)
+  const whitelistServerIp = '87.199.207.190';
+  const whitelistPublicKey = 'nNIF8khJ9tyWIX5CPUNEC-WloIOqP_QhBjpWCnGfPRU';
+  const whitelistShortId = '8ec327093c1354d7';
+  const whitelistSni = 'github.com';
+
   // Параметры обфускации XHTTP (маскировка под REST API)
   const xhttpExtra = {
     xPaddingBytes: '100-1000'
@@ -175,6 +181,22 @@ export function generateSubscription({
       flow: 'xtls-rprx-vision'
     }));
   }
+
+  // === WHITELIST СЕРВЕР (для обхода белых списков операторов) ===
+
+  // VLESS Reality Vision через whitelist-сервер (443) — работает при белых списках
+  nodes.push(generateVlessLink({
+    name: `${clientName} - Whitelist Reality Vision`,
+    uuid,
+    serverIp: whitelistServerIp,
+    port: 443,
+    network: 'tcp',
+    security: 'reality',
+    publicKey: whitelistPublicKey,
+    shortId: whitelistShortId,
+    sni: whitelistSni,
+    flow: 'xtls-rprx-vision'
+  }));
 
   // === WEBSOCKET (через Nginx) ===
 

@@ -347,6 +347,7 @@ function generateVlessLink({
 
   if (security) params.append('security', security);
   if (flow) params.append('flow', flow);
+  params.append('packetEncoding', 'xudp');
   if (sni) params.append('sni', sni);
   if (publicKey) params.append('pbk', publicKey);
   if (shortId) params.append('sid', shortId);
@@ -356,7 +357,7 @@ function generateVlessLink({
   
   // Fingerprint для Reality
   if (security === 'reality') {
-    params.append('fp', 'qq');
+    params.append('fp', 'firefox');
   }
 
   // Параметры XHTTP обфускации

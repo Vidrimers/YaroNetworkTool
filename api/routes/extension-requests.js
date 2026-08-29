@@ -16,7 +16,7 @@ const clientModel = new ClientModel(DB_PATH);
  */
 router.post('/create', async (req, res, next) => {
   try {
-    const { client_uuid, telegram_id, requested_months } = req.body;
+    const { client_uuid, telegram_id, requested_months, source } = req.body;
 
     if (!client_uuid || !telegram_id || !requested_months) {
       return res.status(400).json({
@@ -72,7 +72,7 @@ router.post('/create', async (req, res, next) => {
           `👤 Клиент: ${client.name}\n` +
           `🆔 UUID: <code>${client_uuid}</code>\n` +
           `📅 Запрошено: ${requested_months} ${requested_months === 1 ? 'месяц' : 'месяцев'} (${days} дней)\n` +
-          `🌐 Источник: Веб-панель\n\n` +
+          `🌐 Источник: ${source === 'telegram' ? 'Telegram' : 'Веб-панель'}\n\n` +
           `Выбери действие:`;
         
         const replyMarkup = {

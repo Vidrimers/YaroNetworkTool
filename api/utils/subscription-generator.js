@@ -216,13 +216,10 @@ export function generateSubscription({
   }
 
   // 12. Shadowsocks 2022 + WebSocket через nginx TLS (443)
-  // ПРИМЕЧАНИЕ: SS2022+WS через xray использует нестандартный формат ссылки
-  // Большинство клиентов (Throne, Hiddify) не поддерживают v2ray-plugin в SS ссылках
-  // Используйте VLESS WS TLS 443 вместо этого — тот же эффект
-  /*
+  // Маскировка под HTTPS через TLS Fragmentation + uTLS
   if (ss2022Password) {
     nodes.push(generateShadowsocksLink({
-      name: `${clientName} - SS2022 WS`,
+      name: `${clientName} - SS2022 WS TLS`,
       password: ss2022Password,
       serverIp,
       port: 443,
@@ -231,7 +228,6 @@ export function generateSubscription({
       pluginOpts: 'tls;host=' + serverIp + ';path=/ss-ws'
     }));
   }
-  */
 
   // 13. Shadowsocks 2022 через российский прокси (8448)
   if (ss2022Password && includeRussianProxy) {
@@ -360,8 +356,16 @@ function generateVlessLink({
     params.append('fp', 'firefox');
   }
 
+  // uTLS fingerprint + TLS Fragmentation для WS TLS (обход DPI)
+  if (security === 'tls') {
+    params.append('fp', 'chrome');
+    params.append('fragment', '1');
+    params.append('fragment_fakedns', '1');
+  }
+
   // Параметры XHTTP обфускации
   if (network === 'xhttp' && xhttpExtra) {
+    xhttpExtra.mode = 'stream-one';
     params.append('extra', JSON.stringify(xhttpExtra));
   }
 

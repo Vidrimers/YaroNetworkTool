@@ -3,8 +3,8 @@
 
 set -e
 
-DEPLOY_DIR="/opt/xray-vpn"
-BACKUP_DIR="/opt/xray-vpn-backup"
+DEPLOY_DIR="/home/xray-vpn"
+BACKUP_DIR="/home/xray-vpn-backup"
 
 echo "[DEPLOY] Начинаем обновление..."
 

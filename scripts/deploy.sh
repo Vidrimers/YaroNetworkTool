@@ -19,14 +19,31 @@ sudo cp /usr/local/etc/xray/config.json $BACKUP_DIR/config.json.backup.$(date +%
 echo "[DEPLOY] Обновляем код из GitHub..."
 git pull origin main || git pull origin master || exit 1
 
-# Проверка новой конфигурации (если она изменилась)
-if [ -f "/usr/local/etc/xray/config.json" ]; then
+# Генерация конфигурации X-Ray из шаблона + .env
+echo "[DEPLOY] Генерируем конфигурацию X-Ray из шаблона..."
+if [ -f "configs/xray-vless-reality.json.template" ] && [ -f ".env" ]; then
+    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+    envsubst '${XRAY_PRIVATE_KEY} ${XRAY_SHORT_ID} ${SS2022_PASSWORD}' \
+        < configs/xray-vless-reality.json.template \
+        > /tmp/xray-config-generated.json
+    echo "[DEPLOY] Конфигурация сгенерирована"
+else
+    echo "[ERROR] Не найден шаблон или .env файл!"
+    exit 1
+fi
+
+# Проверка новой конфигурации
+if [ -f "/tmp/xray-config-generated.json" ]; then
     echo "[DEPLOY] Проверяем конфигурацию X-Ray..."
-    /usr/local/bin/xray run -test -config /usr/local/etc/xray/config.json || {
+    /usr/local/bin/xray run -test -config /tmp/xray-config-generated.json || {
         echo "[ERROR] Конфигурация невалидна! Откатываем изменения..."
+        rm -f /tmp/xray-config-generated.json
         git reset --hard HEAD~1
         exit 1
     }
+    echo "[DEPLOY] Конфигурация валидна, копируем..."
+    sudo cp /tmp/xray-config-generated.json /usr/local/etc/xray/config.json
+    rm -f /tmp/xray-config-generated.json
 fi
 
 # Перезапуск X-Ray сервиса

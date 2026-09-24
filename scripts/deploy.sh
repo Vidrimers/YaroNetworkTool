@@ -17,7 +17,7 @@ sudo cp /usr/local/etc/xray/config.json $BACKUP_DIR/config.json.backup.$(date +%
 
 # Обновление кода из GitHub
 echo "[DEPLOY] Обновляем код из GitHub..."
-git pull origin main || git pull origin master || exit 1
+git pull origin master || exit 1
 
 # Генерация конфигурации X-Ray из шаблона + .env
 echo "[DEPLOY] Генерируем конфигурацию X-Ray из шаблона..."
@@ -25,6 +25,7 @@ if [ -f "configs/xray-vless-reality.json.template" ] && [ -f ".env" ]; then
     export $(grep -v '^#' .env | grep -v '^$' | xargs)
     envsubst '${XRAY_PRIVATE_KEY} ${XRAY_SHORT_ID} ${SS2022_PASSWORD}' \
         < configs/xray-vless-reality.json.template \
+        | tr -d '\r' \
         > /tmp/xray-config-generated.json
     echo "[DEPLOY] Конфигурация сгенерирована"
 else

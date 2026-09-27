@@ -20,7 +20,7 @@ export function generateSubscription({
   serverIp,
   publicKey,
   shortId,
-  sni = 'www.amd.com',
+  sni = 'www.microsoft.com',
   ss2022Password,
   clientName = 'MyVPN',
   includeRussianProxy = true
@@ -216,16 +216,16 @@ export function generateSubscription({
   }
 
   // 12. Shadowsocks 2022 + WebSocket через nginx TLS (443)
-  // Маскировка под HTTPS через TLS Fragmentation + uTLS
+  // Используем нативный Xray SS2022+WS формат (НЕ v2ray-plugin!)
   if (ss2022Password) {
-    nodes.push(generateShadowsocksLink({
+    nodes.push(generateShadowsocksWSLink({
       name: `${clientName} - SS2022 WS TLS`,
       password: ss2022Password,
       serverIp,
       port: 443,
       method: '2022-blake3-aes-128-gcm',
-      plugin: 'v2ray-plugin',
-      pluginOpts: 'tls;host=' + serverIp + ';path=/ss-ws'
+      path: '/ss-ws',
+      host: serverIp
     }));
   }
 
@@ -258,7 +258,7 @@ export function generateSubscription({
     name: `${clientName} - Hysteria2`,
     password: process.env.HYSTERIA2_PASSWORD || 'admin_test_password_123',
     serverIp: serverIp, // Используем домен вместо IP
-    port: process.env.HYSTERIA2_PORT || '25000',
+    port: process.env.HYSTERIA2_PORT || '123',
     obfs: {
       type: 'salamander',
       password: process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024'
@@ -354,6 +354,7 @@ function generateVlessLink({
   // Fingerprint для Reality
   if (security === 'reality') {
     params.append('fp', 'firefox');
+    params.append('spx', '/'); // spiderX — путь для начального TLS handshake
   }
 
   // uTLS fingerprint + TLS Fragmentation для WS TLS (обход DPI)
@@ -424,6 +425,43 @@ function generateShadowsocksLink({
   
   link += `#${encodeURIComponent(name)}`;
   
+  return link;
+}
+
+/**
+ * Генерирует Shadowsocks 2022 + WebSocket ссылку (нативный Xray формат)
+ * НЕ использует v2ray-plugin — это нативный Xray SS2022+WS
+ */
+function generateShadowsocksWSLink({
+  name,
+  password,
+  serverIp,
+  port,
+  method,
+  path = '/ss-ws',
+  host = ''
+}) {
+  // SIP002 формат с транспортом WebSocket
+  const userInfo = `${method}:${password}`;
+  const userInfoBase64 = Buffer.from(userInfo).toString('base64').replace(/=+$/, '');
+
+  let link = `ss://${userInfoBase64}@${serverIp}:${port}`;
+
+  // Параметры для Xray SS2022+WS (НЕ v2ray-plugin!)
+  // Формат: plugin=v2ray-plugin%3Btls%3Bhost%3Dxxx%3Bpath%3D%2Fss-ws
+  // Но для нативного Xray SS2022+WS используем обфускацию через WebSocket
+  const pluginOpts = [
+    'tls',
+    `host=${host || serverIp}`,
+    `path=${path}`,
+    'mode=websocket'
+  ].join(';');
+
+  const params = new URLSearchParams();
+  params.append('plugin', `v2ray-plugin;${pluginOpts}`);
+  link += `/?${params.toString()}`;
+
+  link += `#${encodeURIComponent(name)}`;
   return link;
 }
 

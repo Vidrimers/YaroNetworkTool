@@ -725,6 +725,14 @@ export function generateXrayConfig({
 
   // === DIRECT и BLOCK ===
   outbounds.push(
+    // "Авто" — loopback outbound для авто-выбора через balancer
+    {
+      protocol: 'loopback',
+      tag: 'Авто',
+      settings: {
+        inboundTag: 'auto-in'
+      }
+    },
     { protocol: 'freedom', tag: 'direct' },
     { protocol: 'blackhole', tag: 'block' }
   );
@@ -745,6 +753,7 @@ export function generateXrayConfig({
         port: 2080,
         listen: '127.0.0.1',
         protocol: 'mixed',
+        tag: 'mixed-in',
         settings: {
           auth: 'noauth',
           udp: true
@@ -752,6 +761,17 @@ export function generateXrayConfig({
         sniffing: {
           enabled: true,
           destOverride: ['http', 'tls']
+        }
+      },
+      {
+        // Внутренний inbound для loopback "Авто"
+        tag: 'auto-in',
+        listen: '127.0.0.1',
+        port: 2081,
+        protocol: 'mixed',
+        settings: {
+          auth: 'noauth',
+          udp: true
         }
       }
     ],
@@ -772,6 +792,12 @@ export function generateXrayConfig({
     routing: {
       domainStrategy: 'AsIs',
       rules: [
+        // Трафик из "Авто" идёт через балансировщик
+        {
+          type: 'field',
+          inboundTag: ['auto-in'],
+          balancerTag: 'auto'
+        },
         {
           type: 'field',
           ip: ['geoip:private'],
@@ -784,7 +810,7 @@ export function generateXrayConfig({
         },
         {
           type: 'field',
-          // Весь трафик через балансировщик "Авто"
+          // Весь остальной трафик через балансировщик "Авто"
           network: 'tcp,udp',
           balancerTag: 'auto'
         }

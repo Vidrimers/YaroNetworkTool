@@ -27,8 +27,8 @@ export function generateSubscription({
 }) {
   const nodes = [];
 
-  // Для Reality протоколов используем IP адрес вместо домена
-  const realityServerIp = serverIp.includes('.') && !serverIp.match(/[a-z]/i) ? serverIp : '89.124.70.156';
+  // Для Reality протоколов используем домен вместо IP (Xray требует домен для VLESS без TLS)
+  const realityServerIp = '1xbetlineboom.xyz';
   
   // Российский прокси-сервер
   const russianProxyIp = '185.244.172.188';
@@ -496,7 +496,8 @@ export function generateXrayConfig({
 }) {
   const outbounds = [];
 
-  const realityServerIp = serverIp.includes('.') && !serverIp.match(/[a-z]/i) ? serverIp : '89.124.70.156';
+  // Для Reality протоколов используем домен вместо IP (Xray требует домен для VLESS)
+  const realityServerIp = '1xbetlineboom.xyz';
   const russianProxyIp = '185.244.172.188';
 
   // === HELPER: VLESS outbound ===

@@ -481,6 +481,322 @@ export function subscriptionToJSON(subscription) {
 }
 
 /**
+ * Генерирует sing-box конфиг с группой url-test "Авто"
+ * @param {Object} params - Параметры подписки (те же что и generateSubscription)
+ * @returns {Object} sing-box конфиг
+ */
+export function generateSingboxConfig({
+  uuid,
+  serverIp,
+  publicKey,
+  shortId,
+  sni = 'www.microsoft.com',
+  ss2022Password,
+  clientName = 'MyVPN',
+  includeRussianProxy = true
+}) {
+  const outbounds = [];
+  const proxyTags = [];
+
+  const realityServerIp = serverIp.includes('.') && !serverIp.match(/[a-z]/i) ? serverIp : '89.124.70.156';
+  const russianProxyIp = '185.244.172.188';
+
+  // === HELPER: VLESS outbound ===
+  function addVless({ tag, server, port, flow = '', transport = null, tls = null }) {
+    const outbound = {
+      type: 'vless',
+      tag,
+      server,
+      server_port: port,
+      uuid,
+      packet_encoding: 'xudp'
+    };
+    if (flow) outbound.flow = flow;
+    if (transport) outbound.transport = transport;
+    if (tls) outbound.tls = tls;
+    outbounds.push(outbound);
+    proxyTags.push(tag);
+  }
+
+  // === HELPER: Reality TLS settings ===
+  function realityTls(sniVal) {
+    return {
+      enabled: true,
+      server_name: sniVal,
+      reality: {
+        enabled: true,
+        public_key: publicKey,
+        short_id: shortId
+      },
+      utls: {
+        enabled: true,
+        fingerprint: 'firefox'
+      }
+    };
+  }
+
+  // === HELPER: TLS settings ===
+  function tlsSettings(sniVal) {
+    return {
+      enabled: true,
+      server_name: sniVal,
+      utls: {
+        enabled: true,
+        fingerprint: 'chrome'
+      }
+    };
+  }
+
+  // === 1. Reality XHTTP (8443) ===
+  addVless({
+    tag: `${clientName} - Reality XHTTP`,
+    server: realityServerIp,
+    port: 8443,
+    transport: {
+      type: 'xhttp',
+      path: '/api/v1/documents',
+      mode: 'stream-one',
+      extra: {
+        xPaddingBytes: '100-1000'
+      }
+    },
+    tls: realityTls(sni)
+  });
+
+  // === 2. Reality TCP (8444) ===
+  addVless({
+    tag: `${clientName} - Reality TCP`,
+    server: realityServerIp,
+    port: 8444,
+    tls: realityTls(sni)
+  });
+
+  // === 3. Reality gRPC (8445) ===
+  addVless({
+    tag: `${clientName} - Reality gRPC`,
+    server: realityServerIp,
+    port: 8445,
+    transport: {
+      type: 'grpc',
+      service_name: 'vless-grpc'
+    },
+    tls: realityTls(sni)
+  });
+
+  // === 4. Reality Vision (8446) ===
+  addVless({
+    tag: `${clientName} - Reality Vision`,
+    server: realityServerIp,
+    port: 8446,
+    flow: 'xtls-rprx-vision',
+    tls: realityTls(sni)
+  });
+
+  // === 5. Reality Vision 443 ===
+  addVless({
+    tag: `${clientName} - Reality Vision 443`,
+    server: realityServerIp,
+    port: 443,
+    flow: 'xtls-rprx-vision',
+    tls: realityTls(sni)
+  });
+
+  // === RU Proxy Reality ===
+  if (includeRussianProxy) {
+    addVless({
+      tag: `${clientName} - RU Proxy - Reality XHTTP`,
+      server: russianProxyIp,
+      port: 8443,
+      transport: {
+        type: 'xhttp',
+        path: '/api/v1/documents',
+        mode: 'stream-one',
+        extra: { xPaddingBytes: '100-1000' }
+      },
+      tls: realityTls(sni)
+    });
+
+    addVless({
+      tag: `${clientName} - RU Proxy - Reality TCP`,
+      server: russianProxyIp,
+      port: 8444,
+      tls: realityTls(sni)
+    });
+
+    addVless({
+      tag: `${clientName} - RU Proxy - Reality gRPC`,
+      server: russianProxyIp,
+      port: 8445,
+      transport: {
+        type: 'grpc',
+        service_name: 'vless-grpc'
+      },
+      tls: realityTls(sni)
+    });
+
+    addVless({
+      tag: `${clientName} - RU Proxy - Reality Vision`,
+      server: russianProxyIp,
+      port: 8446,
+      flow: 'xtls-rprx-vision',
+      tls: realityTls(sni)
+    });
+  }
+
+  // === VLESS WS TLS ===
+  addVless({
+    tag: `${clientName} - VLESS WS TLS 443`,
+    server: serverIp,
+    port: 443,
+    transport: {
+      type: 'ws',
+      path: '/vless-ws'
+    },
+    tls: tlsSettings(serverIp)
+  });
+
+  addVless({
+    tag: `${clientName} - VLESS WS TLS 2053`,
+    server: serverIp,
+    port: 2053,
+    transport: {
+      type: 'ws',
+      path: '/vless-ws'
+    },
+    tls: tlsSettings(serverIp)
+  });
+
+  // === SS2022 ===
+  if (ss2022Password) {
+    outbounds.push({
+      type: 'shadowsocks',
+      tag: `${clientName} - SS2022`,
+      server: serverIp,
+      server_port: 8448,
+      method: '2022-blake3-aes-128-gcm',
+      password: ss2022Password
+    });
+    proxyTags.push(`${clientName} - SS2022`);
+  }
+
+  if (ss2022Password) {
+    outbounds.push({
+      type: 'shadowsocks',
+      tag: `${clientName} - SS2022 WS TLS`,
+      server: serverIp,
+      server_port: 443,
+      method: '2022-blake3-aes-128-gcm',
+      password: ss2022Password,
+      transport: {
+        type: 'ws',
+        path: '/ss-ws',
+        headers: {
+          Host: serverIp
+        }
+      },
+      tls: tlsSettings(serverIp)
+    });
+    proxyTags.push(`${clientName} - SS2022 WS TLS`);
+  }
+
+  if (ss2022Password && includeRussianProxy) {
+    outbounds.push({
+      type: 'shadowsocks',
+      tag: `${clientName} - RU Proxy - SS2022`,
+      server: russianProxyIp,
+      server_port: 8448,
+      method: '2022-blake3-aes-128-gcm',
+      password: ss2022Password
+    });
+    proxyTags.push(`${clientName} - RU Proxy - SS2022`);
+  }
+
+  // === VLESS WS ===
+  addVless({
+    tag: `${clientName} - VLESS WS`,
+    server: serverIp,
+    port: 8449,
+    transport: {
+      type: 'ws',
+      path: '/ws'
+    }
+  });
+
+  // === Hysteria2 ===
+  const hy2Password = process.env.HYSTERIA2_PASSWORD || 'admin_test_password_123';
+  const hy2Obfs = process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024';
+  const hy2Port = parseInt(process.env.HYSTERIA2_PORT || '123');
+
+  outbounds.push({
+    type: 'hysteria2',
+    tag: `${clientName} - Hysteria2`,
+    server: serverIp,
+    server_port: hy2Port,
+    password: hy2Password,
+    obfs: {
+      type: 'salamander',
+      password: hy2Obfs
+    },
+    tls: {
+      enabled: true,
+      server_name: serverIp,
+      insecure: true
+    }
+  });
+  proxyTags.push(`${clientName} - Hysteria2`);
+
+  // === ГРУППА "Авто" (url-test) ===
+  outbounds.push({
+    type: 'url-test',
+    tag: 'Авто',
+    outbounds: proxyTags,
+    url: 'http://cp.cloudflare.com/',
+    interval: '5m',
+    tolerance: 50
+  });
+
+  // === DIRECT и BLOCK ===
+  outbounds.push(
+    { type: 'direct', tag: 'direct' },
+    { type: 'block', tag: 'block' }
+  );
+
+  // === SING-BOX CONFIG ===
+  return {
+    log: {
+      level: 'warn',
+      timestamp: true
+    },
+    dns: {
+      servers: [
+        { tag: 'remote', address: '8.8.8.8', detour: 'Авто' },
+        { tag: 'local', address: '77.88.8.8', detour: 'direct' }
+      ],
+      rules: [
+        { domain: [serverIp], server: 'local' }
+      ],
+      final: 'remote'
+    },
+    inbounds: [
+      {
+        type: 'mixed',
+        tag: 'mixed',
+        listen: '127.0.0.1',
+        listen_port: 2080
+      }
+    ],
+    outbounds,
+    route: {
+      rules: [
+        { ip_is_private: true, outbound: 'direct' },
+        { protocol: 'dns', outbound: 'direct' }
+      ],
+      final: 'Авто'
+    }
+  };
+}
+
+/**
  * Генерирует Hysteria2 ссылку
  */
 function generateHysteria2Link({
@@ -542,6 +858,7 @@ function generateNaiveProxyPassword(uuid) {
 
 export default {
   generateSubscription,
+  generateSingboxConfig,
   subscriptionToBase64,
   subscriptionToJSON
 };

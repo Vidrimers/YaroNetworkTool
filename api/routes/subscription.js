@@ -4,14 +4,14 @@
 
 import express from 'express';
 import ClientModel from '../../database/models/client.js';
-import { generateSubscription, generateSingboxConfig, subscriptionToBase64 } from '../utils/subscription-generator.js';
+import { generateSubscription, generateXrayConfig, subscriptionToBase64 } from '../utils/subscription-generator.js';
 
 const router = express.Router();
 const DB_PATH = process.env.DB_PATH || './database/vpn.db';
 const clientModel = new ClientModel(DB_PATH);
 
-// Клиенты которые поддерживают sing-box JSON с группами
-const SINGBOX_CLIENTS = /sing-box|clash|hiddify|throne|nekobox|v2rayng|streisand|fool|shadowrocket|stash/i;
+// Клиенты которые поддерживают Xray JSON с балансировщиком
+const XRAY_CLIENTS = /xray|v2ray|clash|hiddify|throne|nekobox|streisand|fool|shadowrocket|stash|sing-box/i;
 
 /**
  * GET /subscription/:uuid - Получить подписку клиента
@@ -59,15 +59,15 @@ router.get('/:uuid', async (req, res, next) => {
     };
 
     // Определяем формат: явный параметр > User-Agent > plain text
-    const wantsSingbox = format === 'singbox' || (!format && SINGBOX_CLIENTS.test(userAgent));
+    const wantsXray = format === 'xray' || (!format && XRAY_CLIENTS.test(userAgent));
 
-    if (wantsSingbox) {
-      // Sing-box JSON с группой "Авто" (url-test)
-      const singboxConfig = generateSingboxConfig(subscriptionParams);
+    if (wantsXray) {
+      // Xray JSON с балансировщиком "Авто" (leastLoad)
+      const xrayConfig = generateXrayConfig(subscriptionParams);
       res.set('Content-Type', 'application/json');
       res.set('Profile-Update-Interval', '6');
       res.set('Subscription-Userinfo', `upload=0; download=0; total=0; expire=0`);
-      return res.json(singboxConfig);
+      return res.json(xrayConfig);
     }
 
     if (format === 'json') {

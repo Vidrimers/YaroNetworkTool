@@ -481,11 +481,12 @@ export function subscriptionToJSON(subscription) {
 }
 
 /**
- * Генерирует sing-box конфиг с группой url-test "Авто"
+ * Генерирует Xray конфиг с балансировщиком нагрузки "Авто"
+ * Использует burstObservatory + leastLoad стратегию
  * @param {Object} params - Параметры подписки (те же что и generateSubscription)
- * @returns {Object} sing-box конфиг
+ * @returns {Object} Xray конфиг
  */
-export function generateSingboxConfig({
+export function generateXrayConfig({
   uuid,
   serverIp,
   publicKey,
@@ -496,302 +497,314 @@ export function generateSingboxConfig({
   includeRussianProxy = true
 }) {
   const outbounds = [];
-  const proxyTags = [];
 
   const realityServerIp = serverIp.includes('.') && !serverIp.match(/[a-z]/i) ? serverIp : '89.124.70.156';
   const russianProxyIp = '185.244.172.188';
 
   // === HELPER: VLESS outbound ===
-  function addVless({ tag, server, port, flow = '', transport = null, tls = null }) {
-    const outbound = {
-      type: 'vless',
+  function addVless({ tag, server, port, flow = '', streamSettings = {} }) {
+    outbounds.push({
+      protocol: 'vless',
       tag,
-      server,
-      server_port: port,
-      uuid,
-      packet_encoding: 'xudp'
-    };
-    if (flow) outbound.flow = flow;
-    if (transport) outbound.transport = transport;
-    if (tls) outbound.tls = tls;
-    outbounds.push(outbound);
-    proxyTags.push(tag);
+      settings: {
+        vnext: [{
+          address: server,
+          port,
+          users: [{
+            id: uuid,
+            encryption: 'none',
+            flow
+          }]
+        }]
+      },
+      streamSettings
+    });
   }
 
-  // === HELPER: Reality TLS settings ===
-  function realityTls(sniVal) {
-    return {
-      enabled: true,
-      server_name: sniVal,
-      reality: {
-        enabled: true,
-        public_key: publicKey,
-        short_id: shortId
-      },
-      utls: {
-        enabled: true,
-        fingerprint: 'firefox'
+  // === HELPER: Reality stream settings ===
+  function realityStream(network, extra = {}) {
+    const ss = {
+      network,
+      security: 'reality',
+      realitySettings: {
+        serverName: sni,
+        fingerprint: 'firefox',
+        publicKey,
+        shortId,
+        spiderX: '/'
       }
     };
+    if (network === 'xhttp') {
+      ss.xhttpSettings = {
+        path: '/api/v1/documents',
+        mode: 'stream-one',
+        extra: { xPaddingBytes: '100-1000' }
+      };
+    }
+    if (network === 'grpc') {
+      ss.grpcSettings = {
+        serviceName: 'vless-grpc'
+      };
+    }
+    return ss;
   }
 
-  // === HELPER: TLS settings ===
-  function tlsSettings(sniVal) {
-    return {
-      enabled: true,
-      server_name: sniVal,
-      utls: {
-        enabled: true,
+  // === HELPER: TLS stream settings ===
+  function tlsStream(network, sniVal, path = '') {
+    const ss = {
+      network,
+      security: 'tls',
+      tlsSettings: {
+        serverName: sniVal,
         fingerprint: 'chrome'
       }
     };
+    if (network === 'ws') {
+      ss.wsSettings = { path };
+    }
+    return ss;
   }
 
   // === 1. Reality XHTTP (8443) ===
   addVless({
-    tag: `${clientName} - Reality XHTTP`,
+    tag: `proxy-1-${clientName}-Reality-XHTTP`,
     server: realityServerIp,
     port: 8443,
-    transport: {
-      type: 'xhttp',
-      path: '/api/v1/documents',
-      mode: 'stream-one',
-      extra: {
-        xPaddingBytes: '100-1000'
-      }
-    },
-    tls: realityTls(sni)
+    streamSettings: realityStream('xhttp')
   });
 
   // === 2. Reality TCP (8444) ===
   addVless({
-    tag: `${clientName} - Reality TCP`,
+    tag: `proxy-2-${clientName}-Reality-TCP`,
     server: realityServerIp,
     port: 8444,
-    tls: realityTls(sni)
+    streamSettings: realityStream('tcp')
   });
 
   // === 3. Reality gRPC (8445) ===
   addVless({
-    tag: `${clientName} - Reality gRPC`,
+    tag: `proxy-3-${clientName}-Reality-gRPC`,
     server: realityServerIp,
     port: 8445,
-    transport: {
-      type: 'grpc',
-      service_name: 'vless-grpc'
-    },
-    tls: realityTls(sni)
+    streamSettings: realityStream('grpc')
   });
 
   // === 4. Reality Vision (8446) ===
   addVless({
-    tag: `${clientName} - Reality Vision`,
+    tag: `proxy-4-${clientName}-Reality-Vision`,
     server: realityServerIp,
     port: 8446,
     flow: 'xtls-rprx-vision',
-    tls: realityTls(sni)
+    streamSettings: realityStream('tcp')
   });
 
   // === 5. Reality Vision 443 ===
   addVless({
-    tag: `${clientName} - Reality Vision 443`,
+    tag: `proxy-5-${clientName}-Reality-Vision-443`,
     server: realityServerIp,
     port: 443,
     flow: 'xtls-rprx-vision',
-    tls: realityTls(sni)
+    streamSettings: realityStream('tcp')
   });
 
   // === RU Proxy Reality ===
   if (includeRussianProxy) {
     addVless({
-      tag: `${clientName} - RU Proxy - Reality XHTTP`,
+      tag: `proxy-6-${clientName}-RU-Reality-XHTTP`,
       server: russianProxyIp,
       port: 8443,
-      transport: {
-        type: 'xhttp',
-        path: '/api/v1/documents',
-        mode: 'stream-one',
-        extra: { xPaddingBytes: '100-1000' }
-      },
-      tls: realityTls(sni)
+      streamSettings: realityStream('xhttp')
     });
 
     addVless({
-      tag: `${clientName} - RU Proxy - Reality TCP`,
+      tag: `proxy-7-${clientName}-RU-Reality-TCP`,
       server: russianProxyIp,
       port: 8444,
-      tls: realityTls(sni)
+      streamSettings: realityStream('tcp')
     });
 
     addVless({
-      tag: `${clientName} - RU Proxy - Reality gRPC`,
+      tag: `proxy-8-${clientName}-RU-Reality-gRPC`,
       server: russianProxyIp,
       port: 8445,
-      transport: {
-        type: 'grpc',
-        service_name: 'vless-grpc'
-      },
-      tls: realityTls(sni)
+      streamSettings: realityStream('grpc')
     });
 
     addVless({
-      tag: `${clientName} - RU Proxy - Reality Vision`,
+      tag: `proxy-9-${clientName}-RU-Reality-Vision`,
       server: russianProxyIp,
       port: 8446,
       flow: 'xtls-rprx-vision',
-      tls: realityTls(sni)
+      streamSettings: realityStream('tcp')
     });
   }
 
   // === VLESS WS TLS ===
   addVless({
-    tag: `${clientName} - VLESS WS TLS 443`,
+    tag: `proxy-10-${clientName}-VLESS-WS-TLS-443`,
     server: serverIp,
     port: 443,
-    transport: {
-      type: 'ws',
-      path: '/vless-ws'
-    },
-    tls: tlsSettings(serverIp)
+    streamSettings: tlsStream('ws', serverIp, '/vless-ws')
   });
 
   addVless({
-    tag: `${clientName} - VLESS WS TLS 2053`,
+    tag: `proxy-11-${clientName}-VLESS-WS-TLS-2053`,
     server: serverIp,
     port: 2053,
-    transport: {
-      type: 'ws',
-      path: '/vless-ws'
-    },
-    tls: tlsSettings(serverIp)
+    streamSettings: tlsStream('ws', serverIp, '/vless-ws')
   });
 
   // === SS2022 ===
   if (ss2022Password) {
     outbounds.push({
-      type: 'shadowsocks',
-      tag: `${clientName} - SS2022`,
-      server: serverIp,
-      server_port: 8448,
-      method: '2022-blake3-aes-128-gcm',
-      password: ss2022Password
+      protocol: 'shadowsocks',
+      tag: `proxy-12-${clientName}-SS2022`,
+      settings: {
+        servers: [{
+          address: serverIp,
+          port: 8448,
+          method: '2022-blake3-aes-128-gcm',
+          password: ss2022Password
+        }]
+      }
     });
-    proxyTags.push(`${clientName} - SS2022`);
   }
 
   if (ss2022Password) {
     outbounds.push({
-      type: 'shadowsocks',
-      tag: `${clientName} - SS2022 WS TLS`,
-      server: serverIp,
-      server_port: 443,
-      method: '2022-blake3-aes-128-gcm',
-      password: ss2022Password,
-      transport: {
-        type: 'ws',
-        path: '/ss-ws',
-        headers: {
-          Host: serverIp
-        }
+      protocol: 'shadowsocks',
+      tag: `proxy-13-${clientName}-SS2022-WS-TLS`,
+      settings: {
+        servers: [{
+          address: serverIp,
+          port: 443,
+          method: '2022-blake3-aes-128-gcm',
+          password: ss2022Password
+        }]
       },
-      tls: tlsSettings(serverIp)
+      streamSettings: {
+        network: 'ws',
+        security: 'tls',
+        wsSettings: {
+          path: '/ss-ws',
+          headers: { Host: serverIp }
+        },
+        tlsSettings: {
+          serverName: serverIp,
+          fingerprint: 'chrome'
+        }
+      }
     });
-    proxyTags.push(`${clientName} - SS2022 WS TLS`);
   }
 
   if (ss2022Password && includeRussianProxy) {
     outbounds.push({
-      type: 'shadowsocks',
-      tag: `${clientName} - RU Proxy - SS2022`,
-      server: russianProxyIp,
-      server_port: 8448,
-      method: '2022-blake3-aes-128-gcm',
-      password: ss2022Password
+      protocol: 'shadowsocks',
+      tag: `proxy-14-${clientName}-RU-SS2022`,
+      settings: {
+        servers: [{
+          address: russianProxyIp,
+          port: 8448,
+          method: '2022-blake3-aes-128-gcm',
+          password: ss2022Password
+        }]
+      }
     });
-    proxyTags.push(`${clientName} - RU Proxy - SS2022`);
   }
 
   // === VLESS WS ===
   addVless({
-    tag: `${clientName} - VLESS WS`,
+    tag: `proxy-15-${clientName}-VLESS-WS`,
     server: serverIp,
     port: 8449,
-    transport: {
-      type: 'ws',
-      path: '/ws'
+    streamSettings: {
+      network: 'ws',
+      wsSettings: { path: '/ws' }
     }
-  });
-
-  // === Hysteria2 ===
-  const hy2Password = process.env.HYSTERIA2_PASSWORD || 'admin_test_password_123';
-  const hy2Obfs = process.env.HYSTERIA2_OBFS_PASSWORD || 'cry_me_a_r1ver_2024';
-  const hy2Port = parseInt(process.env.HYSTERIA2_PORT || '123');
-
-  outbounds.push({
-    type: 'hysteria2',
-    tag: `${clientName} - Hysteria2`,
-    server: serverIp,
-    server_port: hy2Port,
-    password: hy2Password,
-    obfs: {
-      type: 'salamander',
-      password: hy2Obfs
-    },
-    tls: {
-      enabled: true,
-      server_name: serverIp,
-      insecure: true
-    }
-  });
-  proxyTags.push(`${clientName} - Hysteria2`);
-
-  // === ГРУППА "Авто" (url-test) ===
-  outbounds.push({
-    type: 'url-test',
-    tag: 'Авто',
-    outbounds: proxyTags,
-    url: 'http://cp.cloudflare.com/',
-    interval: '5m',
-    tolerance: 50
   });
 
   // === DIRECT и BLOCK ===
   outbounds.push(
-    { type: 'direct', tag: 'direct' },
-    { type: 'block', tag: 'block' }
+    { protocol: 'freedom', tag: 'direct' },
+    { protocol: 'blackhole', tag: 'block' }
   );
 
-  // === SING-BOX CONFIG ===
+  // === XRAY CONFIG ===
   return {
     log: {
-      level: 'warn',
-      timestamp: true
+      loglevel: 'warning'
     },
     dns: {
       servers: [
-        { tag: 'remote', address: '8.8.8.8', detour: 'Авто' },
-        { tag: 'local', address: '77.88.8.8', detour: 'direct' }
-      ],
-      rules: [
-        { domain: [serverIp], server: 'local' }
-      ],
-      final: 'remote'
+        '8.8.8.8',
+        '77.88.8.8'
+      ]
     },
     inbounds: [
       {
-        type: 'mixed',
-        tag: 'mixed',
+        port: 2080,
         listen: '127.0.0.1',
-        listen_port: 2080
+        protocol: 'mixed',
+        settings: {
+          auth: 'noauth',
+          udp: true
+        },
+        sniffing: {
+          enabled: true,
+          destOverride: ['http', 'tls']
+        }
       }
     ],
     outbounds,
-    route: {
+    // === BURST OBSERVATORY ===
+    // Пингует узлы со случайными интервалами (меньше фингерпринт)
+    burstObservatory: {
+      subjectSelector: ['proxy'],
+      pingConfig: {
+        destination: 'https://cp.cloudflare.com/',
+        interval: '1m',
+        sampling: 10,
+        timeout: '5s',
+        httpMethod: 'HEAD'
+      }
+    },
+    // === ROUTING ===
+    routing: {
+      domainStrategy: 'AsIs',
       rules: [
-        { ip_is_private: true, outbound: 'direct' },
-        { protocol: 'dns', outbound: 'direct' }
+        {
+          type: 'field',
+          ip: ['geoip:private'],
+          outboundTag: 'direct'
+        },
+        {
+          type: 'field',
+          protocol: ['bittorrent'],
+          outboundTag: 'direct'
+        },
+        {
+          type: 'field',
+          // Весь трафик через балансировщик "Авто"
+          network: 'tcp,udp',
+          balancerTag: 'auto'
+        }
       ],
-      final: 'Авто'
+      balancers: [
+        {
+          tag: 'auto',
+          selector: ['proxy'],
+          fallbackTag: 'direct',
+          strategy: {
+            type: 'leastLoad',
+            settings: {
+              expected: 2,
+              maxRTT: '800ms',
+              tolerance: 0.05,
+              baselines: ['200ms', '400ms']
+            }
+          }
+        }
+      ]
     }
   };
 }
@@ -858,7 +871,7 @@ function generateNaiveProxyPassword(uuid) {
 
 export default {
   generateSubscription,
-  generateSingboxConfig,
+  generateXrayConfig,
   subscriptionToBase64,
   subscriptionToJSON
 };

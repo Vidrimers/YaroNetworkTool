@@ -343,7 +343,6 @@ function generateVlessLink({
 
   if (security) params.append('security', security);
   if (flow) params.append('flow', flow);
-  params.append('packetEncoding', 'xudp');
   if (sni) params.append('sni', sni);
   if (publicKey) params.append('pbk', publicKey);
   if (shortId) params.append('sid', shortId);
@@ -354,7 +353,6 @@ function generateVlessLink({
   // Fingerprint для Reality
   if (security === 'reality') {
     params.append('fp', 'firefox');
-    params.append('spx', '/'); // spiderX — путь для начального TLS handshake
   }
 
   // uTLS fingerprint + TLS Fragmentation для WS TLS (обход DPI)
@@ -530,10 +528,17 @@ export function generateXrayConfig({
         serverName: sni,
         fingerprint: 'firefox',
         publicKey,
-        shortId,
-        spiderX: '/'
+        shortId
       }
     };
+    // TCP Reality требует tcpSettings.header.type: "none"
+    if (network === 'tcp') {
+      ss.tcpSettings = {
+        header: {
+          type: 'none'
+        }
+      };
+    }
     if (network === 'xhttp') {
       ss.xhttpSettings = {
         path: '/api/v1/documents',
